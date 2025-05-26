@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Grid,
@@ -8,6 +8,7 @@ import {
   Button,
   Typography,
   Box,
+  Alert,
 } from '@mui/material';
 import {
   PersonAdd,
@@ -19,19 +20,21 @@ import Layout from '../components/Layout';
 
 function Welcome() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const message = location.state?.message;
 
   const cards = [
     {
       title: 'New Patient',
       description: 'Register a new patient and start TB screening',
       icon: <PersonAdd sx={{ fontSize: 40 }} />,
-      action: () => navigate('/patient/new'),
+      action: () => navigate('/patients/register'),
     },
     {
       title: 'Patient History',
       description: 'View and manage existing patient records',
       icon: <History sx={{ fontSize: 40 }} />,
-      action: () => navigate('/patient/history'),
+      action: () => navigate('/patients/history'),
     },
     {
       title: 'Upload X-ray/CT',
@@ -50,6 +53,19 @@ function Welcome() {
   return (
     <Layout>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {message && (
+          <Alert 
+            severity="success" 
+            sx={{ mb: 3 }}
+            onClose={() => {
+              // Clear the message from location state
+              window.history.replaceState({}, document.title)
+            }}
+          >
+            {message}
+          </Alert>
+        )}
+        
         <Typography
           component="h1"
           variant="h4"
@@ -69,26 +85,21 @@ function Welcome() {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
+                  transition: '0.3s',
                   '&:hover': {
-                    boxShadow: 6,
+                    transform: 'translateY(-5px)',
+                    boxShadow: 3,
                   },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      mb: 2,
-                      color: 'primary.main',
-                    }}
-                  >
+                <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
+                  <Box sx={{ mb: 2 }}>
                     {card.icon}
                   </Box>
-                  <Typography gutterBottom variant="h5" component="h2" align="center">
+                  <Typography gutterBottom variant="h5" component="h2">
                     {card.title}
                   </Typography>
-                  <Typography align="center" color="text.secondary">
+                  <Typography>
                     {card.description}
                   </Typography>
                 </CardContent>
@@ -99,7 +110,7 @@ function Welcome() {
                     onClick={card.action}
                     sx={{ mx: 2, mb: 2 }}
                   >
-                    {card.title}
+                    {`Go to ${card.title}`}
                   </Button>
                 </CardActions>
               </Card>

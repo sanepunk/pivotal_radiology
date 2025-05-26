@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 
@@ -11,8 +11,16 @@ import PatientHistory from './pages/PatientHistory';
 import ImageUpload from './pages/ImageUpload';
 import Visualization from './pages/Visualization';
 import Report from './pages/Report';
+import PatientRegistration from './pages/PatientRegistration';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const theme = createTheme({
   palette: {
@@ -46,8 +54,8 @@ function App() {
           <Routes>
             <Route path="/" element={<SignIn />} />
             <Route path="/welcome" element={<Welcome />} />
-            <Route path="/patient/new" element={<PatientForm />} />
-            <Route path="/patient/history" element={<PatientHistory />} />
+            <Route path="/patients/register" element={<PatientRegistration />} />
+            <Route path="/patients/history" element={<PatientHistory />} />
             <Route path="/upload" element={<ImageUpload />} />
             <Route path="/visualize" element={<Visualization />} />
             <Route path="/report" element={<Report />} />
