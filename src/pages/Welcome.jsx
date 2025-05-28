@@ -18,7 +18,6 @@ import {
   Assessment,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
-import PatientList from '../components/PatientList';
 
 function Welcome() {
   const navigate = useNavigate();
@@ -36,7 +35,7 @@ function Welcome() {
       title: 'Patient History',
       description: 'View and manage existing patient records',
       icon: <History sx={{ fontSize: 40 }} />,
-      action: () => navigate('/patients/history'),
+      action: () => navigate('/patients', { state: { message: 'Please select a patient to view their history' } }),
     },
     {
       title: 'Upload X-ray/CT',
@@ -122,10 +121,6 @@ function Welcome() {
 
         <Box mt={6} mb={4}>
           <Divider />
-        </Box>
-
-        <Box mt={4}>
-          <PatientList />
         </Box>
       </Container>
     </Layout>

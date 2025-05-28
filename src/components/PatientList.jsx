@@ -32,35 +32,61 @@ const PatientList = () => {
     try {
       setLoading(true);
       const response = await patientAPI.getPatients();
-      setPatients(response.data);
+      setPatients(response.data || []);
       setError('');
     } catch (err) {
       console.error('Error fetching patients:', err);
       setError('Failed to load patients. Please try again later.');
+      setPatients([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRowClick = (patientUid) => {
-    navigate(`/patients/${patientUid}`);
+    navigate(`/patients/${patientUid}/history`);
   };
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.uid.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPatients = patients.filter((patient) => {
+    if (!patient) return false;
+    const searchTermLower = searchTerm.toLowerCase();
+    const nameMatch = patient.name ? patient.name.toLowerCase().includes(searchTermLower) : false;
+    const uidMatch = patient.uid ? patient.uid.toString().toLowerCase().includes(searchTermLower) : false;
+    return nameMatch || uidMatch;
+  });
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="300px"
+        flexDirection="column"
+        gap={2}
+      >
+        <CircularProgress size={40} />
+        <Typography variant="h6" color="textSecondary">
+          Loading patients...
+        </Typography>
       </Box>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          mb: 3,
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: '100px'
+        }}
+      >
+        {error}
+      </Alert>
+    );
   }
 
   return (
@@ -108,13 +134,13 @@ const PatientList = () => {
                   <TableCell>{patient.uid}</TableCell>
                   <TableCell>{patient.name}</TableCell>
                   <TableCell>
-                    {format(new Date(patient.date_of_birth), 'MM/dd/yyyy')}
+                    {patient.date_of_birth ? format(new Date(patient.date_of_birth), 'MM/dd/yyyy') : 'N/A'}
                   </TableCell>
-                  <TableCell>{patient.gender}</TableCell>
+                  <TableCell>{patient.gender || 'N/A'}</TableCell>
                   <TableCell>
-                    {patient.contact.phone}
+                    {patient.contact?.phone || 'N/A'}
                     <br />
-                    {patient.contact.email}
+                    {patient.contact?.email || 'N/A'}
                   </TableCell>
                 </TableRow>
               ))

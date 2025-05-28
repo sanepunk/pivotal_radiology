@@ -13,6 +13,7 @@ import ImageUpload from './pages/ImageUpload';
 import Visualization from './pages/Visualization';
 import Report from './pages/Report';
 import PatientRegistration from './pages/PatientRegistration';
+import PatientListPage from './pages/PatientListPage';
 import PatientDetails from './components/PatientDetails';
 
 // Layout Component
@@ -84,6 +85,14 @@ function App() {
               }
             />
             <Route
+              path="/patients"
+              element={
+                <ProtectedRoute>
+                  <PatientListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/patients/register"
               element={
                 <ProtectedRoute>
@@ -92,7 +101,7 @@ function App() {
               }
             />
             <Route
-              path="/patients/history"
+              path="/patients/:uid/history"
               element={
                 <ProtectedRoute>
                   <PatientHistory />
@@ -104,6 +113,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PatientDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:patientUid/edit"
+              element={
+                <ProtectedRoute>
+                  <PatientForm />
                 </ProtectedRoute>
               }
             />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
@@ -8,21 +8,54 @@ import {
   Button,
   LinearProgress,
   Alert,
+  TextField,
+  CircularProgress,
+  Autocomplete,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import LoadingTips from '../components/LoadingTips';
+import { fileAPI, patientAPI } from '../services/api';
 
 function ImageUpload() {
   const navigate = useNavigate();
   const location = useLocation();
-  const patientData = location.state?.patientData;
-
+  const [patientUid, setPatientUid] = useState('');
+  const [patientData, setPatientData] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [patients, setPatients] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    // Fetch all patients when component mounts
+    fetchPatients();
+  }, []);
+
+  const fetchPatients = async () => {
+    try {
+      const response = await patientAPI.getPatients();
+      setPatients(response.data || []);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+    }
+  };
+
+  const handlePatientSelect = (event, value) => {
+    if (value) {
+      setPatientUid(value.uid);
+      setPatientData(value);
+      setError('');
+    } else {
+      setPatientUid('');
+      setPatientData(null);
+    }
+  };
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -46,31 +79,33 @@ function ImageUpload() {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      setError('Please select a file to upload');
+      return;
+    }
+
+    if (!patientData) {
+      setError('Please enter a valid patient ID first');
+      return;
+    }
 
     setUploading(true);
     setProgress(0);
 
     try {
-      // Simulate file upload progress
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 500);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('patientUid', patientData.uid);
+      if (notes.trim()) {
+        formData.append('notes', notes);
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      const response = await fileAPI.uploadFile(formData, (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setProgress(percentCompleted);
+      });
 
-      // Clear interval
-      clearInterval(interval);
-      setProgress(100);
-
-      // Navigate to results page
+      // Navigate to visualization page
       navigate('/visualize', {
         state: {
           patientData,
@@ -78,15 +113,14 @@ function ImageUpload() {
             fileName: selectedFile.name,
             fileType: selectedFile.type,
             preview: preview,
-          },
-          diagnosis: {
-            result: 'benign', // This would come from the API
-            confidence: 0.95,
-          },
+            ...response.data
+          }
         },
       });
     } catch (error) {
+      console.error('Upload error:', error);
       setError('Error uploading file. Please try again.');
+    } finally {
       setUploading(false);
     }
   };
@@ -99,15 +133,55 @@ function ImageUpload() {
             Upload Medical Image
           </Typography>
 
-          {patientData && (
-            <Typography variant="subtitle1" gutterBottom>
-              Patient: {patientData.name} (UID: {patientData.uid})
-            </Typography>
-          )}
-
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Patient Information
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+              <Autocomplete
+                fullWidth
+                options={patients}
+                getOptionLabel={(option) => `${option.name} (${option.uid})`}
+                value={patientData}
+                onChange={handlePatientSelect}
+                inputValue={searchText}
+                onInputChange={(event, newInputValue) => {
+                  setSearchText(newInputValue);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Search Patient by Name or ID"
+                    required
+                    error={Boolean(error && error.includes('patient'))}
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Box>
+                      <Typography variant="body1">{option.name}</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        ID: {option.uid}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                loading={loading}
+                loadingText="Loading patients..."
+                noOptionsText="No patients found"
+              />
+            </Box>
+          </Box>
+
+          {patientData && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              Patient selected: {patientData.name} (ID: {patientData.uid})
             </Alert>
           )}
 
@@ -117,12 +191,13 @@ function ImageUpload() {
               borderRadius: 2,
               p: 3,
               textAlign: 'center',
-              cursor: 'pointer',
+              cursor: patientData ? 'pointer' : 'not-allowed',
+              opacity: patientData ? 1 : 0.7,
               '&:hover': {
-                borderColor: 'primary.main',
+                borderColor: patientData ? 'primary.main' : '#ccc',
               },
             }}
-            onClick={() => document.getElementById('file-input').click()}
+            onClick={() => patientData && document.getElementById('file-input').click()}
           >
             <input
               type="file"
@@ -130,10 +205,11 @@ function ImageUpload() {
               accept=".dcm,.png,.jpg,.jpeg"
               style={{ display: 'none' }}
               onChange={handleFileSelect}
+              disabled={!patientData}
             />
             <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
-              Click to upload or drag and drop
+              {patientData ? 'Click to upload or drag and drop' : 'Please select a patient first'}
             </Typography>
             <Typography color="textSecondary">
               Supported formats: DICOM, PNG, JPEG
@@ -165,6 +241,15 @@ function ImageUpload() {
                   />
                 </Box>
               )}
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Notes (Optional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                sx={{ mt: 2 }}
+              />
             </Box>
           )}
 
@@ -175,7 +260,7 @@ function ImageUpload() {
             fullWidth
             size="large"
             onClick={handleUpload}
-            disabled={!selectedFile || uploading}
+            disabled={!selectedFile || !patientData || uploading}
             sx={{ mt: 3 }}
           >
             {uploading ? 'Uploading...' : 'Upload & Analyze'}

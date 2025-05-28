@@ -16,21 +16,26 @@ import { patientAPI } from '../services/api';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { format } from 'date-fns';
 
 const validationSchema = Yup.object({
-  firstName: Yup.string().required('First name is required'),
-  lastName: Yup.string().required('Last name is required'),
-  dateOfBirth: Yup.date()
+  name: Yup.string().required('Full name is required'),
+  date_of_birth: Yup.date()
     .max(new Date(), 'Date of birth cannot be in the future')
     .required('Date of birth is required'),
   gender: Yup.string()
     .oneOf(['male', 'female', 'other'], 'Invalid gender')
     .required('Gender is required'),
-  contactNumber: Yup.string()
-    .matches(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
-    .required('Contact number is required'),
+  contact: Yup.object().shape({
+    phone: Yup.string()
+      .matches(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
+      .required('Phone number is required'),
+    email: Yup.string()
+      .email('Invalid email format')
+      .required('Email is required')
+  }),
   address: Yup.string().required('Address is required'),
-  medicalHistory: Yup.string(),
+  medical_history: Yup.string(),
 });
 
 function PatientRegistration() {
@@ -42,7 +47,11 @@ function PatientRegistration() {
     setLoading(true);
     setError('');
     try {
-      const response = await patientAPI.createPatient(values);
+      const response = await patientAPI.createPatient({
+        ...values,
+        date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
+      });
+      
       // After successful registration, navigate to welcome page
       navigate('/welcome', { 
         state: { 
@@ -82,13 +91,15 @@ function PatientRegistration() {
 
         <Formik
           initialValues={{
-            firstName: '',
-            lastName: '',
-            dateOfBirth: null,
+            name: '',
+            date_of_birth: null,
             gender: '',
-            contactNumber: '',
+            contact: {
+              phone: '',
+              email: ''
+            },
             address: '',
-            medicalHistory: '',
+            medical_history: '',
           }}
           validationSchema={validationSchema}
           onSubmit={handleSubmit}
@@ -96,51 +107,35 @@ function PatientRegistration() {
           {({ values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
             <Form style={{ width: '100%' }}>
               <Box sx={{ mt: 1 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <TextField
-                    margin="normal"
-                    required
-                    fullWidth
-                    id="firstName"
-                    label="First Name"
-                    name="firstName"
-                    autoFocus
-                    value={values.firstName}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.firstName && Boolean(errors.firstName)}
-                    helperText={touched.firstName && errors.firstName}
-                  />
-
-                  <TextField
-                    margin="normal"
-                    required
-                    fullWidth
-                    id="lastName"
-                    label="Last Name"
-                    name="lastName"
-                    value={values.lastName}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.lastName && Boolean(errors.lastName)}
-                    helperText={touched.lastName && errors.lastName}
-                  />
-                </Box>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Full Name"
+                  name="name"
+                  autoFocus
+                  value={values.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.name && Boolean(errors.name)}
+                  helperText={touched.name && errors.name}
+                />
 
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       label="Date of Birth"
-                      value={values.dateOfBirth}
-                      onChange={(date) => setFieldValue('dateOfBirth', date)}
+                      value={values.date_of_birth}
+                      onChange={(date) => setFieldValue('date_of_birth', date)}
                       renderInput={(params) => (
                         <TextField
                           {...params}
                           required
                           fullWidth
                           margin="normal"
-                          error={touched.dateOfBirth && Boolean(errors.dateOfBirth)}
-                          helperText={touched.dateOfBirth && errors.dateOfBirth}
+                          error={touched.date_of_birth && Boolean(errors.date_of_birth)}
+                          helperText={touched.date_of_birth && errors.date_of_birth}
                         />
                       )}
                     />
@@ -166,20 +161,37 @@ function PatientRegistration() {
                   </TextField>
                 </Box>
 
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  id="contactNumber"
-                  label="Contact Number"
-                  name="contactNumber"
-                  placeholder="+1234567890"
-                  value={values.contactNumber}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.contactNumber && Boolean(errors.contactNumber)}
-                  helperText={touched.contactNumber && errors.contactNumber}
-                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="contact.phone"
+                    label="Phone Number"
+                    name="contact.phone"
+                    placeholder="+1234567890"
+                    value={values.contact.phone}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.contact?.phone && Boolean(errors.contact?.phone)}
+                    helperText={touched.contact?.phone && errors.contact?.phone}
+                  />
+
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="contact.email"
+                    label="Email"
+                    name="contact.email"
+                    type="email"
+                    value={values.contact.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.contact?.email && Boolean(errors.contact?.email)}
+                    helperText={touched.contact?.email && errors.contact?.email}
+                  />
+                </Box>
 
                 <TextField
                   margin="normal"
@@ -200,16 +212,16 @@ function PatientRegistration() {
                 <TextField
                   margin="normal"
                   fullWidth
-                  id="medicalHistory"
+                  id="medical_history"
                   label="Medical History"
-                  name="medicalHistory"
+                  name="medical_history"
                   multiline
                   rows={4}
-                  value={values.medicalHistory}
+                  value={values.medical_history}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={touched.medicalHistory && Boolean(errors.medicalHistory)}
-                  helperText={touched.medicalHistory && errors.medicalHistory}
+                  error={touched.medical_history && Boolean(errors.medical_history)}
+                  helperText={touched.medical_history && errors.medical_history}
                 />
 
                 <Button
@@ -219,7 +231,7 @@ function PatientRegistration() {
                   sx={{ mt: 3, mb: 2 }}
                   disabled={isSubmitting || loading}
                 >
-                  {loading ? 'Registering Patient...' : 'Register Patient'}
+                  {loading ? 'Registering...' : 'Register Patient'}
                 </Button>
               </Box>
             </Form>
