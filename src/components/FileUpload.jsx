@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   Typography,
+  TextField,
 } from '@mui/material';
 import { fileAPI } from '../services/api';
 
@@ -22,6 +23,8 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
+  const [doctorName, setDoctorName] = useState('');
+  const [notes, setNotes] = useState('');
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
@@ -64,11 +67,18 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
       setError('Patient UID is required for file upload');
       return;
     }
+    if (!doctorName.trim()) {
+      setError('Doctor name is required');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('patientUid', patientUid);
-    formData.append('type', fileType);
+    formData.append('doctor_name', doctorName);
+    if (notes.trim()) {
+      formData.append('notes', notes);
+    }
 
     try {
       setUploading(true);
@@ -82,6 +92,8 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
       setFile(null);
       setPreview(null);
       setUploadProgress(0);
+      setDoctorName('');
+      setNotes('');
       if (onFileUploaded) onFileUploaded();
     } catch (error) {
       setError('Error uploading file. Please try again.');
@@ -132,6 +144,25 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
               <MenuItem value="report">Report (PDF)</MenuItem>
             </Select>
           </FormControl>
+
+          <TextField
+            fullWidth
+            required
+            label="Doctor Name"
+            value={doctorName}
+            onChange={(e) => setDoctorName(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label="Notes (Optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            sx={{ mb: 2 }}
+          />
 
           <Box sx={{ mb: 2 }}>
             <input
@@ -184,7 +215,7 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
             variant="contained"
             color="primary"
             fullWidth
-            disabled={!file || uploading}
+            disabled={!file || uploading || !doctorName.trim()}
           >
             {uploading ? 'Uploading...' : 'Upload'}
           </Button>
