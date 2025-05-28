@@ -9,20 +9,45 @@ import {
   Typography,
   Box,
   Alert,
-  Divider,
 } from '@mui/material';
 import {
   PersonAdd,
   History,
   CloudUpload,
   Assessment,
+  People,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import { useState, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 function Welcome() {
   const navigate = useNavigate();
   const location = useLocation();
   const message = location.state?.message;
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // First try to get user from localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUserData(JSON.parse(storedUser));
+        }
+        
+        // Also verify with backend
+        const response = await authAPI.verifyToken();
+        setUserData(response.data);
+      } catch (error) {
+        console.error('Error verifying auth:', error);
+        if (error.response?.status === 401) {
+          navigate('/login');
+        }
+      }
+    };
+    checkAuth();
+  }, [navigate]);
 
   const cards = [
     {
@@ -32,7 +57,7 @@ function Welcome() {
       action: () => navigate('/patients/register'),
     },
     {
-      title: 'Patient History',
+      title: 'Patient List',
       description: 'View and manage existing patient records',
       icon: <History sx={{ fontSize: 40 }} />,
       action: () => navigate('/patients', { state: { message: 'Please select a patient to view their history' } }),
@@ -49,7 +74,17 @@ function Welcome() {
       icon: <Assessment sx={{ fontSize: 40 }} />,
       action: () => navigate('/report'),
     },
+    ...(userData?.role === 'admin' ? [{
+      title: 'Doctor Management',
+      description: 'Manage doctors and their accounts',
+      icon: <People sx={{ fontSize: 40 }} />,
+      action: () => navigate('/doctors'),
+    }] : []),
   ];
+
+  if (!userData) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Layout>
@@ -118,10 +153,6 @@ function Welcome() {
             </Grid>
           ))}
         </Grid>
-
-        <Box mt={6} mb={4}>
-          <Divider />
-        </Box>
       </Container>
     </Layout>
   );

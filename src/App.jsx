@@ -15,6 +15,7 @@ import Report from './pages/Report';
 import PatientRegistration from './pages/PatientRegistration';
 import PatientListPage from './pages/PatientListPage';
 import PatientDetails from './components/PatientDetails';
+import DoctorManagement from './pages/DoctorManagement';
 
 // Layout Component
 const Layout = ({ children }) => {
@@ -60,11 +61,18 @@ const theme = createTheme({
 });
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
   const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   if (!token) {
     return <Navigate to="/" replace />;
   }
+
+  if (adminOnly && user.role !== 'admin') {
+    return <Navigate to="/welcome" replace />;
+  }
+
   return <Layout>{children}</Layout>;
 };
 
@@ -145,6 +153,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Report />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctors"
+              element={
+                <ProtectedRoute adminOnly={true}>
+                  <DoctorManagement />
                 </ProtectedRoute>
               }
             />

@@ -11,7 +11,23 @@ const api = axios.create({
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If this is a login response, store the token and user data
+    if (response.config.url === '/auth/login') {
+      const token = `Bearer ${response.data.access_token}`;
+      localStorage.setItem('token', token);
+      // After login, fetch user data
+      api.get('/auth/verify')
+        .then(userResponse => {
+          localStorage.setItem('user', JSON.stringify(userResponse.data));
+        });
+    }
+    // If this is a verify response, store user data
+    if (response.config.url === '/auth/verify') {
+      localStorage.setItem('user', JSON.stringify(response.data));
+    }
+    return response;
+  },
   (error) => {
     if (error.response) {
       // The request was made and the server responded with a status code
@@ -20,7 +36,8 @@ api.interceptors.response.use(
       if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         localStorage.removeItem('token');
-        window.location.href = '/';
+        localStorage.removeItem('user');
+        window.location.href = '/login';
       }
       return Promise.reject(error);
     } else if (error.request) {
@@ -38,24 +55,25 @@ api.interceptors.response.use(
 // Auth interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log('Token from localStorage:', token); // Debug log
   if (token) {
-    // Token should already be in the format "Bearer <token>"
     config.headers.Authorization = token;
-    console.log('Request headers:', config.headers); // Debug log
-  } else {
-    console.log('No token found in localStorage'); // Debug log
   }
   return config;
 });
 
 // Auth endpoints
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: async (credentials) => {
+    const response = await api.post('/auth/login', credentials);
+    return response;
+  },
   register: (userData) => api.post('/auth/register', userData),
   verifyToken: () => api.get('/auth/verify'),
+  getDoctors: () => api.get('/auth/doctors'),
+  deleteDoctor: (email) => api.delete(`/auth/doctors/${email}`),
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     return Promise.resolve();
   },
 };
@@ -76,7 +94,9 @@ export const patientAPI = {
 export const fileAPI = {
   uploadFile: (formData, onUploadProgress) => 
     api.post('/patients/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+      },
       onUploadProgress
     }),
   getFile: (fileId) => api.get(`/patients/files/${fileId}`),

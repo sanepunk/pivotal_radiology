@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   Typography,
+  TextField,
 } from '@mui/material';
 import { fileAPI } from '../services/api';
 
@@ -22,21 +23,21 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [doctorName, setDoctorName] = useState('');
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
     // Validate file type
-    if (fileType === 'xray' && !selectedFile.type.startsWith('image/')) {
-      setError('Please select an image file for X-rays');
-      setFile(null);
-      setPreview(null);
-      return;
-    }
+    const allowedTypes = {
+      'xray': ['image/png', 'image/jpeg', 'application/dicom'],
+      'report': ['application/pdf']
+    };
 
-    if (fileType === 'report' && selectedFile.type !== 'application/pdf') {
-      setError('Please select a PDF file for reports');
+    if (!allowedTypes[fileType].includes(selectedFile.type)) {
+      setError(`Please select a valid file type for ${fileType}. Allowed types: ${allowedTypes[fileType].join(', ')}`);
       setFile(null);
       setPreview(null);
       return;
@@ -64,28 +65,52 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
       setError('Patient UID is required for file upload');
       return;
     }
+    if (!doctorName.trim()) {
+      setError('Doctor name is required');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('patientUid', patientUid);
-    formData.append('type', fileType);
+    formData.append('doctor_name', doctorName);
+    // Only append notes if it has a value
+    if (notes && notes.trim()) {
+      formData.append('notes', notes.trim());
+    }
+
+    // Debug logging
+    console.log('Uploading file with data:', {
+      fileName: file.name,
+      fileType: file.type,
+      patientUid,
+      doctorName,
+      notes: notes || ''
+    });
 
     try {
       setUploading(true);
       setUploadProgress(0);
 
-      await fileAPI.uploadFile(formData, (progressEvent) => {
+      const response = await fileAPI.uploadFile(formData, (progressEvent) => {
         const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         setUploadProgress(progress);
       });
 
+      console.log('Upload response:', response);
+
+      // Clear form after successful upload
       setFile(null);
       setPreview(null);
       setUploadProgress(0);
+      setNotes('');
+      setDoctorName('');
+      setError('');
       if (onFileUploaded) onFileUploaded();
     } catch (error) {
-      setError('Error uploading file. Please try again.');
-      console.error('Upload error:', error);
+      console.error('Upload error:', error.response?.data || error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Error uploading file. Please try again.';
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -132,6 +157,25 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
               <MenuItem value="report">Report (PDF)</MenuItem>
             </Select>
           </FormControl>
+
+          <TextField
+            fullWidth
+            required
+            label="Doctor Name"
+            value={doctorName}
+            onChange={(e) => setDoctorName(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            rows={2}
+            label="Notes (Optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            sx={{ mb: 2 }}
+          />
 
           <Box sx={{ mb: 2 }}>
             <input
@@ -184,7 +228,7 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
             variant="contained"
             color="primary"
             fullWidth
-            disabled={!file || uploading}
+            disabled={!file || uploading || !doctorName.trim()}
           >
             {uploading ? 'Uploading...' : 'Upload'}
           </Button>
