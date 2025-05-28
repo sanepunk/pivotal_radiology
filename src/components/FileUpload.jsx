@@ -23,21 +23,23 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
-  const [notes, setNotes] = useState('');
   const [doctorName, setDoctorName] = useState('');
+  const [notes, setNotes] = useState('');
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
     // Validate file type
-    const allowedTypes = {
-      'xray': ['image/png', 'image/jpeg', 'application/dicom'],
-      'report': ['application/pdf']
-    };
+    if (fileType === 'xray' && !selectedFile.type.startsWith('image/')) {
+      setError('Please select an image file for X-rays');
+      setFile(null);
+      setPreview(null);
+      return;
+    }
 
-    if (!allowedTypes[fileType].includes(selectedFile.type)) {
-      setError(`Please select a valid file type for ${fileType}. Allowed types: ${allowedTypes[fileType].join(', ')}`);
+    if (fileType === 'report' && selectedFile.type !== 'application/pdf') {
+      setError('Please select a PDF file for reports');
       setFile(null);
       setPreview(null);
       return;
@@ -74,43 +76,28 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
     formData.append('file', file);
     formData.append('patientUid', patientUid);
     formData.append('doctor_name', doctorName);
-    // Only append notes if it has a value
-    if (notes && notes.trim()) {
-      formData.append('notes', notes.trim());
+    if (notes.trim()) {
+      formData.append('notes', notes);
     }
-
-    // Debug logging
-    console.log('Uploading file with data:', {
-      fileName: file.name,
-      fileType: file.type,
-      patientUid,
-      doctorName,
-      notes: notes || ''
-    });
 
     try {
       setUploading(true);
       setUploadProgress(0);
 
-      const response = await fileAPI.uploadFile(formData, (progressEvent) => {
+      await fileAPI.uploadFile(formData, (progressEvent) => {
         const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         setUploadProgress(progress);
       });
 
-      console.log('Upload response:', response);
-
-      // Clear form after successful upload
       setFile(null);
       setPreview(null);
       setUploadProgress(0);
-      setNotes('');
       setDoctorName('');
-      setError('');
+      setNotes('');
       if (onFileUploaded) onFileUploaded();
     } catch (error) {
-      console.error('Upload error:', error.response?.data || error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Error uploading file. Please try again.';
-      setError(errorMessage);
+      setError('Error uploading file. Please try again.');
+      console.error('Upload error:', error);
     } finally {
       setUploading(false);
     }
@@ -164,6 +151,8 @@ const FileUpload = ({ patientUid, onFileUploaded }) => {
             label="Doctor Name"
             value={doctorName}
             onChange={(e) => setDoctorName(e.target.value)}
+            error={Boolean(error && error.includes('doctor'))}
+            helperText={error && error.includes('doctor') ? error : ''}
             sx={{ mb: 2 }}
           />
 

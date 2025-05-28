@@ -31,6 +31,7 @@ function ImageUpload() {
   const [patients, setPatients] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [notes, setNotes] = useState('');
+  const [doctorName, setDoctorName] = useState('');
 
   useEffect(() => {
     // Fetch all patients when component mounts
@@ -89,6 +90,11 @@ function ImageUpload() {
       return;
     }
 
+    if (!doctorName.trim()) {
+      setError('Doctor name is required');
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
 
@@ -96,6 +102,7 @@ function ImageUpload() {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('patientUid', patientData.uid);
+      formData.append('doctor_name', doctorName);
       if (notes.trim()) {
         formData.append('notes', notes);
       }
@@ -185,6 +192,17 @@ function ImageUpload() {
             </Alert>
           )}
 
+          <TextField
+            fullWidth
+            required
+            label="Doctor Name"
+            value={doctorName}
+            onChange={(e) => setDoctorName(e.target.value)}
+            error={Boolean(error && error.includes('doctor'))}
+            helperText={error && error.includes('doctor') ? error : ''}
+            sx={{ mb: 3 }}
+          />
+
           <Box
             sx={{
               border: '2px dashed #ccc',
@@ -260,7 +278,7 @@ function ImageUpload() {
             fullWidth
             size="large"
             onClick={handleUpload}
-            disabled={!selectedFile || !patientData || uploading}
+            disabled={!selectedFile || !patientData || uploading || !doctorName.trim()}
             sx={{ mt: 3 }}
           >
             {uploading ? 'Uploading...' : 'Upload & Analyze'}
