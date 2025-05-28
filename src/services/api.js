@@ -66,7 +66,20 @@ export const patientAPI = {
   getPatients: (params) => api.get('/patients/history', { params }),
   getPatientById: (id) => api.get(`/patients/${id}`),
   updatePatient: (id, data) => api.put(`/patients/${id}`, data),
-  searchPatients: (query) => api.get('/patients/search', { params: query })
+  searchPatients: (query) => api.get('/patients/search', { params: query }),
+  // Add new endpoints
+  getPatientHistory: (patientUid) => api.get(`/patients/${patientUid}/history`),
+  addVisitHistory: (patientUid, visitData) => api.post(`/patients/${patientUid}/history`, visitData),
+};
+
+// File endpoints
+export const fileAPI = {
+  uploadFile: (formData, onUploadProgress) => 
+    api.post('/files/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress
+    }),
+  getFile: (fileId) => api.get(`/files/${fileId}`),
 };
 
 // Image analysis endpoints

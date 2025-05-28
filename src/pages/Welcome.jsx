@@ -9,6 +9,7 @@ import {
   Typography,
   Box,
   Alert,
+  Divider,
 } from '@mui/material';
 import {
   PersonAdd,
@@ -17,6 +18,7 @@ import {
   Assessment,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import PatientList from '../components/PatientList';
 
 function Welcome() {
   const navigate = useNavigate();
@@ -117,6 +119,14 @@ function Welcome() {
             </Grid>
           ))}
         </Grid>
+
+        <Box mt={6} mb={4}>
+          <Divider />
+        </Box>
+
+        <Box mt={4}>
+          <PatientList />
+        </Box>
       </Container>
     </Layout>
   );

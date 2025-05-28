@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
+import { Container, Box } from '@mui/material';
 
 // Pages
 import SignIn from './pages/SignIn';
@@ -12,6 +13,18 @@ import ImageUpload from './pages/ImageUpload';
 import Visualization from './pages/Visualization';
 import Report from './pages/Report';
 import PatientRegistration from './pages/PatientRegistration';
+import PatientDetails from './components/PatientDetails';
+
+// Layout Component
+const Layout = ({ children }) => {
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ py: 4 }}>
+        {children}
+      </Box>
+    </Container>
+  );
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +58,15 @@ const theme = createTheme({
   },
 });
 
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+  return <Layout>{children}</Layout>;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -53,12 +75,63 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<SignIn />} />
-            <Route path="/welcome" element={<Welcome />} />
-            <Route path="/patients/register" element={<PatientRegistration />} />
-            <Route path="/patients/history" element={<PatientHistory />} />
-            <Route path="/upload" element={<ImageUpload />} />
-            <Route path="/visualize" element={<Visualization />} />
-            <Route path="/report" element={<Report />} />
+            <Route
+              path="/welcome"
+              element={
+                <ProtectedRoute>
+                  <Welcome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/register"
+              element={
+                <ProtectedRoute>
+                  <PatientRegistration />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/history"
+              element={
+                <ProtectedRoute>
+                  <PatientHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:patientUid"
+              element={
+                <ProtectedRoute>
+                  <PatientDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload"
+              element={
+                <ProtectedRoute>
+                  <ImageUpload />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/visualize"
+              element={
+                <ProtectedRoute>
+                  <Visualization />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/report"
+              element={
+                <ProtectedRoute>
+                  <Report />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </ThemeProvider>
