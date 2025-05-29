@@ -52,7 +52,7 @@ const PatientFiles = ({ patientUid }) => {
   };
 
   const getImageUrl = (fileId) => {
-    return `${import.meta.env.VITE_API_URL}/patients/files/${fileId}`;
+    return files.find(f => f._id === fileId)?.file_path || '';
   };
 
   return (

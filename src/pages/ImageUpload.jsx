@@ -169,16 +169,23 @@ function ImageUpload() {
                     error={Boolean(error && error.includes('patient'))}
                   />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Box>
-                      <Typography variant="body1">{option.name}</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        ID: {option.uid}
-                      </Typography>
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box
+                      key={option.uid}
+                      component="li"
+                      {...otherProps}
+                    >
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          ID: {option.uid}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                )}
+                  );
+                }}
                 loading={loading}
                 loadingText="Loading patients..."
                 noOptionsText="No patients found"

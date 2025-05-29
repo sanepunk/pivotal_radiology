@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { supabase } from './supabase';
 
-const API_BASE_URL = 'https://pivotal-radiology-backend.onrender.com'; // FastAPI backend URL
+// const API_BASE_URL = 'https://pivotal-radiology-backend.onrender.com'; // FastAPI backend URL
+const API_BASE_URL = 'http://localhost:8000'; // FastAPI backend URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -92,14 +94,107 @@ export const patientAPI = {
 
 // File endpoints
 export const fileAPI = {
-  uploadFile: (formData, onUploadProgress) => 
-    api.post('/patients/files/upload', formData, {
-      headers: { 
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress
-    }),
-  getFile: (fileId) => api.get(`/patients/files/${fileId}`),
+  uploadFile: async (formData, onUploadProgress) => {
+    try {
+      const file = formData.get('file');
+      const patientUid = formData.get('patientUid');
+      const doctorName = formData.get('doctor_name');
+      const notes = formData.get('notes');
+
+      // Check if Supabase is properly configured
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        throw new Error('Supabase configuration is missing. Please check your .env file.');
+      }
+
+      console.log('Starting file upload to Supabase...');
+      console.log('File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        patientUid,
+        doctorName
+      });
+
+      // First check if the bucket exists
+      const { data: buckets, error: bucketError } = await supabase
+        .storage
+        .listBuckets();
+
+      if (bucketError) {
+        console.error('Error checking buckets:', bucketError);
+        throw new Error('Failed to check storage buckets. Please ensure you have proper permissions.');
+      }
+
+      const bucketExists = buckets.some(b => b.name === 'pivotal');
+      if (!bucketExists) {
+        throw new Error('Storage bucket "patient-files" not found. Please create it in your Supabase dashboard.');
+      }
+
+      // Upload file to Supabase Storage
+      const timestamp = new Date().getTime();
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${patientUid}/${timestamp}.${fileExt}`;
+      
+      console.log('Uploading to Supabase path:', filePath);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('pivotal')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          onUploadProgress: (progress) => {
+            if (onUploadProgress) {
+              onUploadProgress({ loaded: progress.loaded, total: progress.total });
+            }
+          }
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw new Error(`Supabase upload failed: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded successfully to Supabase:', uploadData);
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('pivtoal')
+        .getPublicUrl(filePath);
+
+      if (!urlData || !urlData.publicUrl) {
+        throw new Error('Failed to get public URL from Supabase');
+      }
+
+      console.log('Got public URL:', urlData.publicUrl);
+
+      // Save file reference to backend
+      const fileData = new FormData();
+      fileData.append('patientUid', patientUid);
+      fileData.append('doctor_name', doctorName);
+      if (notes) fileData.append('notes', notes);
+      fileData.append('file_path', urlData.publicUrl);
+      fileData.append('file_name', file.name);
+      fileData.append('file_type', file.type);
+
+      console.log('Saving file reference to backend...');
+      const response = await api.post('/patients/files/upload', fileData);
+      console.log('File reference saved successfully:', response.data);
+      
+      return response;
+    } catch (error) {
+      console.error('Upload error:', error);
+      // Add more context to the error
+      if (error.message.includes('bucket')) {
+        throw new Error('Storage setup required: ' + error.message + ' Please contact your administrator.');
+      }
+      throw new Error(`File upload failed: ${error.message}`);
+    }
+  },
+  
+  getFile: async (fileId) => {
+    const response = await api.get(`/patients/files/${fileId}`);
+    return response;
+  }
 };
 
 // Image analysis endpoints
