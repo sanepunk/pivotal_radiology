@@ -68,12 +68,12 @@ function Welcome() {
       icon: <CloudUpload sx={{ fontSize: 40 }} />,
       action: () => navigate('/upload'),
     },
-    {
-      title: 'Reports',
-      description: 'Generate and view TB screening reports',
-      icon: <Assessment sx={{ fontSize: 40 }} />,
-      action: () => navigate('/report'),
-    },
+    // {
+    //   title: 'Reports',
+    //   description: 'Generate and view TB screening reports',
+    //   icon: <Assessment sx={{ fontSize: 40 }} />,
+    //   action: () => navigate('/report'),
+    // },
     ...(userData?.role === 'admin' ? [{
       title: 'Doctor Management',
       description: 'Manage doctors and their accounts',
@@ -113,11 +113,35 @@ function Welcome() {
           Welcome to TB Screening Portal
         </Typography>
 
-        <Grid container spacing={4}>
+        <Grid 
+          container 
+          spacing={4} 
+          justifyContent="center"
+          alignItems="stretch"
+          sx={{
+            maxWidth: userData?.role === 'admin' ? '100%' : '1000px',
+            margin: '0 auto'
+          }}
+        >
           {cards.map((card, index) => (
-            <Grid item key={index} xs={12} sm={6} md={3}>
+            <Grid 
+              item 
+              key={index} 
+              xs={12} 
+              sm={6} 
+              md={userData?.role === 'admin' ? 
+                (index === cards.length - 1 ? 12 : 6) : // Make the last card (Doctor Management) full width for admin
+                6
+              }
+              sx={{
+                display: 'flex',
+                justifyContent: 'center'
+              }}
+            >
               <Card
                 sx={{
+                  width: '100%',
+                  maxWidth: '350px',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',

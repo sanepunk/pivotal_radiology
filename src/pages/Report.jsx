@@ -18,15 +18,21 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import Layout from '../components/Layout';
 import LoadingTips from '../components/LoadingTips';
+import IconImage from '../assets/Icon.png';
+import { calculateAge } from '../utils/dateUtils';
 
 function Report() {
   const location = useLocation();
   const navigate = useNavigate();
   const { patientData, imageData, diagnosis, visualizationData } = location.state || {};
+  const tbConfidence = 95; // This would come from your ML model in reality
 
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -40,6 +46,11 @@ function Report() {
   };
 
   const handleDownloadPDF = async () => {
+    if (!password) {
+      setError('Please enter a password for the PDF');
+      return;
+    }
+
     setShowPasswordDialog(false);
     setGeneratingPDF(true);
     setPdfProgress(0);
@@ -56,207 +67,177 @@ function Report() {
     }, 300);
 
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF({
+        encryption: {
+          userPassword: password,
+          ownerPassword: password,
+          userPermissions: ['print', 'copy']
+        }
+      });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 20;
+      let yPosition = 5;
 
-      // Title
-      doc.setFontSize(20);
+      // Add header with logo and border line
+      doc.addImage(IconImage, 'PNG', 20, yPosition, 40, 12);
+      yPosition = yPosition + 10;
+      // Title - moved above the line
+      doc.setFontSize(22);
       doc.setTextColor(0, 0, 128); // Navy Blue
-      doc.text('TB Screening Report', pageWidth / 2, yPosition, { align: 'center' });
+      doc.setFont(undefined, 'bold');
+      doc.text('TB Screening Report', pageWidth / 2, yPosition + 8, { align: 'center' });
+      
+      // Header border line
+      doc.setDrawColor(0, 0, 128); // Navy Blue
+      doc.setLineWidth(0.5);
+      doc.line(20, yPosition + 16, pageWidth - 20, yPosition + 16);
+      yPosition = yPosition + 30;
+
+      // Add TB Confidence Score with adjusted positioning
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 128);
+      doc.setFont(undefined, 'bold');
+      doc.text('TB Detection Confidence:', 25, yPosition);
+      
+      // Add progress bar with adjusted dimensions
+      const barWidth = 50;
+      const barHeight = 6;
+      const startX = 120;
+      
+      // Draw background bar
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(200, 200, 200);
+      doc.roundedRect(startX, yPosition - 4, barWidth, barHeight, 1, 1, 'F');
+      
+      // Draw filled portion
+      doc.setDrawColor(0, 0, 128);
+      doc.setFillColor(0, 0, 128);
+      doc.roundedRect(startX, yPosition - 4, (tbConfidence / 100) * barWidth, barHeight, 1, 1, 'F');
+      
+      // Add percentage text
+      doc.setFontSize(11);
+      doc.text(`${tbConfidence}%`, startX + barWidth + 3, yPosition);
       yPosition += 20;
 
-      // I. Patient Information
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('I. Patient Information', 20, yPosition);
-      yPosition += 10;
+      // Section Headers Style
+      const addSectionHeader = (text, y) => {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 128);
+        doc.setFont(undefined, 'bold');
+        doc.text(text, 20, y);
+        doc.setLineWidth(0.2);
+        doc.line(20, y + 2, pageWidth - 20, y + 2);
+        return y + 12;
+      };
 
-      doc.setFontSize(12);
+      // I. X-Ray Details
+      yPosition = addSectionHeader('I. X-Ray Details', yPosition);
+      doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Name: ${patientData?.name}`, 20, yPosition); yPosition += 8;
-      doc.text(`Patient ID: ${patientData?.uid}`, 20, yPosition); yPosition += 8;
-      doc.text(`Age / Sex: ${patientData?.age} / ${patientData?.sex}`, 20, yPosition); yPosition += 8;
-      doc.text(`Date of X-ray: ${new Date().toISOString().split('T')[0]}`, 20, yPosition); yPosition += 8;
-      doc.text(`Facility: Example General Hospital`, 20, yPosition); yPosition += 15;
+      doc.setFont(undefined, 'normal');
+      doc.text(`View: Posteroanterior (PA)`, 25, yPosition); yPosition += 7;
+      doc.text(`Date: ${new Date().toLocaleString()}`, 25, yPosition); yPosition += 7;
+      doc.text(`Technician: A. Smith, RT(R)`, 25, yPosition); yPosition += 7;
+      doc.text(`Reporting Radiologist: Dr. Jane Patel, MD`, 25, yPosition); yPosition += 15;
 
-      // II. X-Ray Details
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('II. X-Ray Details', 20, yPosition);
-      yPosition += 10;
-
+      // II. Radiology Report
+      yPosition = addSectionHeader('II. Radiology Report', yPosition);
       doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`View: Posteroanterior (PA)`, 20, yPosition); yPosition += 8;
-      doc.text(`Date: ${new Date().toLocaleString()}`, 20, yPosition); yPosition += 8;
-      doc.text(`Technician: A. Smith, RT(R)`, 20, yPosition); yPosition += 15;
-      doc.text(`Reporting Radiologist: Dr. Jane Patel, MD`, 20, yPosition); yPosition += 15;
+      doc.setFont(undefined, 'bold');
+      doc.text('Overall Impression', 25, yPosition);
+      yPosition += 8;
 
-      // III. Radiology Report
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('III. Radiology Report', 20, yPosition);
-      yPosition += 10;
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      doc.text('Findings are suggestive of active pulmonary tuberculosis.', 25, yPosition);
+      yPosition += 12;
 
-      doc.setFontSize(14);
-      doc.text('Overall Impression', 20, yPosition);
-      yPosition += 10;
-
-      doc.setFontSize(12);
-      doc.text('Findings are suggestive of active pulmonary tuberculosis.', 20, yPosition);
-      yPosition += 15;
-
-      // Specific Findings Table
-      doc.setFontSize(14);
-      doc.text('Specific Findings', 20, yPosition);
-      yPosition += 10;
-
-      const findings = [
-        ['Right Upper Lobe', 'Patchy, nodular opacities with increased density'],
-        ['Left Upper Lobe', 'Small, thin-walled cavitary lesion (~1.2 cm)'],
-        ['Hilar Regions', 'Bilateral hilar lymphadenopathy; nodes enlarged to ~2 cm'],
-        ['Pleural Spaces', 'No significant pleural effusion or pneumothorax'],
-        ['Other', 'No miliary pattern; lung bases clear; cardiac silhouette normal']
-      ];
-
-      // Add findings table
-      const startY = yPosition;
+      // Specific Findings Table with adjusted width
       doc.autoTable({
-        startY,
+        startY: yPosition,
         head: [['Location', 'Finding']],
-        body: findings,
+        body: [
+          ['Right Upper Lobe', 'Patchy, nodular opacities with increased density'],
+          ['Left Upper Lobe', 'Small, thin-walled cavitary lesion (~1.2 cm)'],
+          ['Hilar Regions', 'Bilateral hilar lymphadenopathy; nodes enlarged to ~2 cm'],
+          ['Pleural Spaces', 'No significant pleural effusion or pneumothorax'],
+          ['Other', 'No miliary pattern; lung bases clear; cardiac silhouette normal']
+        ],
         theme: 'grid',
-        headStyles: { fillColor: [0, 0, 128] },
-        margin: { left: 20 }
+        headStyles: { 
+          fillColor: [0, 0, 128],
+          fontSize: 10,
+          fontStyle: 'bold'
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3
+        },
+        margin: { left: 25, right: 25 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 'auto' }
+        }
       });
-      yPosition = doc.lastAutoTable.finalY + 15;
+      yPosition = doc.lastAutoTable.finalY + 12;
 
-      // IV. Recommendations
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('IV. Recommendations', 20, yPosition);
-      yPosition += 10;
+      // III. Image Analysis
+      yPosition = addSectionHeader('III. Image Analysis', yPosition);
+      
+      // Add the three images side by side with adjusted dimensions
+      if (imageData?.preview) {
+        const imgWidth = (pageWidth - 70) / 3;
+        const imgHeight = 35;
+        
+        // Add images with proper spacing
+        doc.addImage(imageData.preview, 'JPEG', 25, yPosition, imgWidth, imgHeight);
+        doc.addImage(imageData.preview, 'JPEG', 25 + imgWidth + 5, yPosition, imgWidth, imgHeight);
+        doc.addImage(imageData.preview, 'JPEG', 25 + (imgWidth + 5) * 2, yPosition, imgWidth, imgHeight);
+        
+        yPosition += imgHeight + 4;
+        
+        // Image labels with adjusted positioning
+        doc.setFontSize(8);
+        doc.text('Original X-ray', 25 + imgWidth/2, yPosition, { align: 'center' });
+        doc.text('Segmentation Overlay', 25 + imgWidth * 1.5 + 5, yPosition, { align: 'center' });
+        doc.text('3D Reconstruction', 25 + imgWidth * 2.5 + 10, yPosition, { align: 'center' });
+        yPosition += 12;
+      }
 
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      const recommendations = [
-        '1. Microbiological Confirmation',
-        '   • Sputum AFB smear and culture (×3)',
-        '   • Molecular testing (e.g., Xpert MTB/RIF)',
-        '2. Treatment Referral',
-        '   • Refer to TB clinic for initiation of anti-tubercular therapy',
-        '3. Follow-Up Imaging',
-        '   • Repeat chest X-ray after 2 months of therapy to assess response'
-      ];
-
-      recommendations.forEach(rec => {
-        doc.text(rec, 20, yPosition);
-        yPosition += 8;
-      });
-      yPosition += 7;
-
-      // V. Additional Notes
-      if (yPosition > pageHeight - 60) {
+      // Check if we need a new page for Key Point box
+      if (yPosition > pageHeight - 50) {
         doc.addPage();
         yPosition = 20;
       }
 
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('V. Additional Notes', 20, yPosition);
-      yPosition += 10;
-
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      const notes = [
-        '• Clinical Correlation Required: Correlate with symptoms (cough, fever, weight loss) and HIV status.',
-        '• Differential Diagnoses: Fungal infection (e.g., histoplasmosis), malignancy—consider based on context.',
-        '• Risk Factors: History of prior TB; HIV-positive status increases reactivation risk.'
-      ];
-
-      notes.forEach(note => {
-        const lines = doc.splitTextToSize(note, pageWidth - 40);
-        lines.forEach(line => {
-          if (yPosition > pageHeight - 40) {
-            doc.addPage();
-            yPosition = 20;
-          }
-          doc.text(line, 20, yPosition);
-          yPosition += 8;
-        });
-      });
-      yPosition += 7;
-
-      // Key Point box
-      if (yPosition > pageHeight - 60) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
+      // Key Point box with gradient background
       doc.setDrawColor(0, 0, 128);
-      doc.setLineWidth(0.5);
-      doc.rect(20, yPosition, pageWidth - 40, 25);
+      doc.setFillColor(240, 240, 255);
+      doc.roundedRect(25, yPosition, pageWidth - 50, 22, 2, 2, 'FD');
+      yPosition += 6;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(0, 0, 128);
+      doc.text('Key Point:', 30, yPosition);
       yPosition += 5;
       
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 128);
-      doc.text('Key Point:', 25, yPosition);
-      yPosition += 8;
-      
+      doc.setFont(undefined, 'normal');
       doc.setTextColor(0, 0, 0);
-      doc.text('A chest X-ray can raise strong suspicion for TB but cannot confirm diagnosis—', 25, yPosition);
-      yPosition += 8;
-      doc.text('combine with microbiology and clinical assessment before treatment decisions.', 25, yPosition);
-      yPosition += 15;
+      doc.setFontSize(9);
+      const keyPointText = 'A chest X-ray can raise strong suspicion for TB but cannot confirm diagnosis—combine with microbiology and clinical assessment before treatment decisions.';
+      const lines = doc.splitTextToSize(keyPointText, pageWidth - 60);
+      doc.text(lines, 30, yPosition);
 
-      // VI. Image Comparison
-      if (yPosition > pageHeight - 100) {
-        doc.addPage();
-        yPosition = 20;
-      }
-
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 128);
-      doc.text('VI. Image Comparison', 20, yPosition);
-      yPosition += 15;
-
-      // Add the three images side by side if available
-      if (imageData?.preview) {
-        const imgWidth = (pageWidth - 60) / 3;
-        const imgHeight = 60;
-        
-        try {
-          // Original Image
-          doc.addImage(imageData.preview, 'JPEG', 20, yPosition, imgWidth, imgHeight);
-          
-          // Thermal Overlay (if available)
-          if (visualizationData?.thermalView) {
-            doc.addImage(imageData.preview, 'JPEG', 20 + imgWidth + 10, yPosition, imgWidth, imgHeight);
-          }
-          
-          // 3D View (if available)
-          if (visualizationData?.viewMode === '3d') {
-            doc.addImage(imageData.preview, 'JPEG', 20 + (imgWidth + 10) * 2, yPosition, imgWidth, imgHeight);
-          }
-          
-          yPosition += imgHeight + 10;
-          
-          // Image labels
-          doc.setFontSize(10);
-          doc.text('Input X-ray', 20, yPosition);
-          doc.text('Thermal Overlay', 20 + imgWidth + 10, yPosition);
-          doc.text('3D View', 20 + (imgWidth + 10) * 2, yPosition);
-        } catch (error) {
-          console.error('Error adding images to PDF:', error);
-        }
-      }
-
-      // Footer
-      doc.setFontSize(10);
+      // Footer with border line
+      doc.setDrawColor(0, 0, 128);
+      doc.setLineWidth(0.5);
+      doc.line(20, pageHeight - 15, pageWidth - 20, pageHeight - 15);
+      
+      doc.setFontSize(9);
       doc.setTextColor(128, 128, 128);
-      doc.text('Generated by TB Screening System', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text('Generated by TB Screening System', pageWidth / 2, pageHeight - 8, { align: 'center' });
+      doc.text('Page 1', pageWidth - 25, pageHeight - 8);
 
       // Wait for progress to complete
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -273,235 +254,288 @@ function Report() {
   return (
     <Layout>
       <Container maxWidth="lg">
-        <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-          <Typography variant="h4" color="primary" gutterBottom align="center">
-            TB Screening Report
-          </Typography>
+        <Paper elevation={3} sx={{ p: 4, mt: 4, position: 'relative' }}>
+          {/* Header with Logo */}
+          <Box 
+  sx={{ 
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'left',
+    pb: 2,
+    borderBottom: '2px solid #000080',
+    mb: 4
+  }}
+>
+  <img 
+    src={IconImage} 
+    alt="Logo" 
+    style={{ width: 190, height: 80, marginBottom: -1 }} 
+  />
+  <Typography 
+    variant="h3" 
+    color="primary" 
+    sx={{ 
+      fontWeight: 'bold',
+      color: '#000080',
+      textAlign: 'center'
+    }}
+  >
+    TB Screening Report
+  </Typography>
+</Box>
+
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Patient Information Box */}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 3, 
+              mb: 4, 
+              backgroundColor: '#f0f0ff',
+              border: '1px solid #000080',
+              borderRadius: 2
+            }}
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body1">
+                  <strong>Patient Name:</strong> {patientData?.name}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Age / Sex:</strong> {calculateAge(patientData?.date_of_birth)} / {patientData?.gender}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>Facility:</strong> Example General Hospital
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body1" align="right">
+                  <strong>Patient ID:</strong> {patientData?.uid}
+                </Typography>
+                <Typography variant="body1" align="right">
+                  <strong>Date:</strong> {new Date().toLocaleDateString()}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          {/* TB Confidence Score */}
+          <Box sx={{ mb: 4, pl: 2 }}>
+            <Typography variant="h6" color="primary" gutterBottom>
+              TB Detection Confidence
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ flexGrow: 1, mr: 1 }}>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: 10, 
+                  bgcolor: '#e0e0e0',
+                  borderRadius: 1,
+                  position: 'relative'
+                }}>
+                  <Box sx={{
+                    width: `${tbConfidence}%`,
+                    height: '100%',
+                    bgcolor: '#000080',
+                    borderRadius: 1,
+                    transition: 'width 1s ease-in-out',
+                  }} />
+                </Box>
+              </Box>
+              <Typography variant="h6" color="primary">
+                {tbConfidence}%
+              </Typography>
+            </Box>
+          </Box>
 
           {generatingPDF ? (
             <LoadingTips progress={pdfProgress} />
           ) : (
             <>
-              <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
-                  {/* Section I: Patient Information */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      I. Patient Information
-                    </Typography>
-                    <Typography>Name: {patientData?.name}</Typography>
-                    <Typography>Patient ID: {patientData?.uid}</Typography>
-                    <Typography>Age / Sex: {patientData?.age} / {patientData?.sex}</Typography>
-                    <Typography>Date of X-ray: {new Date().toISOString().split('T')[0]}</Typography>
-                    <Typography>Facility: Example General Hospital</Typography>
-                  </Box>
+              {/* X-Ray Details Section */}
+              <Box sx={{ mb: 4 }}>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    color: '#000080',
+                    fontWeight: 'bold',
+                    pb: 1,
+                    borderBottom: '1px solid #000080',
+                    mb: 2
+                  }}
+                >
+                  I. X-Ray Details
+                </Typography>
+                <Box sx={{ pl: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>View:</strong> Posteroanterior (PA)
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Date:</strong> {new Date().toLocaleString()}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Technician:</strong> A. Smith, RT(R)
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Reporting Radiologist:</strong> Dr. Jane Patel, MD
+                  </Typography>
+                </Box>
+              </Box>
 
-                  {/* Section II: X-Ray Details */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      II. X-Ray Details
-                    </Typography>
-                    <Typography>View: Posteroanterior (PA)</Typography>
-                    <Typography>Date: {new Date().toLocaleString()}</Typography>
-                    <Typography>Technician: A. Smith, RT(R)</Typography>
-                    <Typography>Reporting Radiologist: Dr. Jane Patel, MD</Typography>
-                  </Box>
+              {/* Radiology Report Section */}
+              <Box sx={{ mb: 4 }}>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    color: '#000080',
+                    fontWeight: 'bold',
+                    pb: 1,
+                    borderBottom: '1px solid #000080',
+                    mb: 2
+                  }}
+                >
+                  II. Radiology Report
+                </Typography>
+                <Typography variant="h6" gutterBottom sx={{ pl: 2 }}>
+                  Overall Impression
+                </Typography>
+                <Typography variant="body1" sx={{ pl: 2, mb: 3 }}>
+                  Findings are <strong>suggestive of active pulmonary tuberculosis</strong>.
+                </Typography>
 
-                  {/* Section III: Radiology Report */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      III. Radiology Report
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Overall Impression
-                    </Typography>
-                    <Typography sx={{ mb: 2 }}>
-                      Findings are <strong>suggestive of active pulmonary tuberculosis</strong>.
-                    </Typography>
+                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#000080' }}>
+                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Finding</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Right Upper Lobe</TableCell>
+                        <TableCell>Patchy, nodular opacities with increased density</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Left Upper Lobe</TableCell>
+                        <TableCell>Small, thin-walled cavitary lesion (~1.2 cm)</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Hilar Regions</TableCell>
+                        <TableCell>Bilateral hilar lymphadenopathy; nodes enlarged to ~2 cm</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Pleural Spaces</TableCell>
+                        <TableCell>No significant pleural effusion or pneumothorax</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Other</TableCell>
+                        <TableCell>No miliary pattern; lung bases clear; cardiac silhouette normal</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
 
-                    <Typography variant="subtitle1" gutterBottom>
-                      Specific Findings
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Location</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Finding</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>Right Upper Lobe</TableCell>
-                            <TableCell>Patchy, nodular opacities with increased density</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Left Upper Lobe</TableCell>
-                            <TableCell>Small, thin-walled cavitary lesion (~1.2 cm)</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Hilar Regions</TableCell>
-                            <TableCell>Bilateral hilar lymphadenopathy; nodes enlarged to ~2 cm</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Pleural Spaces</TableCell>
-                            <TableCell>No significant pleural effusion or pneumothorax</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Other</TableCell>
-                            <TableCell>No miliary pattern; lung bases clear; cardiac silhouette normal</TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
+              {/* Image Analysis Section */}
+              <Box sx={{ mb: 4}}>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    color: '#000080',
+                    fontWeight: 'bold',
+                    pb: 1,
+                    borderBottom: '1px solid #000080',
+                    mb: 2
+                  }}
+                >
+                  III. Image Analysis
+                </Typography>
+                <Grid container spacing={2} sx={{ mb: 2, justifyContent: 'center' }}>
+                  {imageData?.preview && (
+                    <>
+                      <Grid item xs={12} md={4}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <img
+                            src={imageData.preview}
+                            alt="Original X-ray"
+                            style={{ 
+                              width: '100%', 
+                              height: 'auto',
+                              maxHeight: 200,
+                              objectFit: 'contain',
+                              marginBottom: 8
+                            }}
+                          />
+                          <Typography variant="body2">Original X-ray</Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <img
+                            src={imageData.preview}
+                            alt="Segmentation Overlay"
+                            style={{ 
+                              width: '100%', 
+                              height: 'auto',
+                              maxHeight: 200,
+                              objectFit: 'contain',
+                              marginBottom: 8
+                            }}
+                          />
+                          <Typography variant="body2">Segmentation Overlay</Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <img
+                            src={imageData.preview}
+                            alt="3D Reconstruction"
+                            style={{ 
+                              width: '100%', 
+                              height: 'auto',
+                              maxHeight: 200,
+                              objectFit: 'contain',
+                              marginBottom: 8
+                            }}
+                          />
+                          <Typography variant="body2">3D Reconstruction</Typography>
+                        </Box>
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
+              </Box>
 
-                <Grid item xs={12} md={6}>
-                  {/* Section IV: Recommendations */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      IV. Recommendations
-                    </Typography>
-                    <Typography variant="subtitle1" gutterBottom>
-                      1. Microbiological Confirmation
-                    </Typography>
-                    <Typography sx={{ ml: 2 }}>• Sputum AFB smear and culture (×3)</Typography>
-                    <Typography sx={{ ml: 2, mb: 1 }}>• Molecular testing (e.g., Xpert MTB/RIF)</Typography>
-                    
-                    <Typography variant="subtitle1" gutterBottom>
-                      2. Treatment Referral
-                    </Typography>
-                    <Typography sx={{ ml: 2, mb: 1 }}>• Refer to TB clinic for initiation of anti-tubercular therapy</Typography>
-                    
-                    <Typography variant="subtitle1" gutterBottom>
-                      3. Follow-Up Imaging
-                    </Typography>
-                    <Typography sx={{ ml: 2 }}>• Repeat chest X-ray after 2 months of therapy to assess response</Typography>
-                  </Box>
-
-                  {/* Section V: Additional Notes */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      V. Additional Notes
-                    </Typography>
-                    <Typography sx={{ mb: 1 }}>
-                      • Clinical Correlation Required: Correlate with symptoms (cough, fever, weight loss) and HIV status.
-                    </Typography>
-                    <Typography sx={{ mb: 1 }}>
-                      • Differential Diagnoses: Fungal infection (e.g., histoplasmosis), malignancy—consider based on context.
-                    </Typography>
-                    <Typography>
-                      • Risk Factors: History of prior TB; HIV-positive status increases reactivation risk.
-                    </Typography>
-                  </Box>
-
-                  {/* Key Point Box */}
-                  <Paper 
-                    variant="outlined" 
-                    sx={{ 
-                      p: 2, 
-                      mb: 4, 
-                      border: '1px solid #000080',
-                      borderRadius: 1 
-                    }}
-                  >
-                    <Typography variant="subtitle1" color="primary" gutterBottom>
-                      Key Point:
-                    </Typography>
-                    <Typography>
-                      A chest X-ray can raise strong suspicion for TB but <strong>cannot</strong> confirm diagnosis—combine with microbiology and clinical assessment before treatment decisions.
-                    </Typography>
-                  </Paper>
-
-                  {/* Section VI: Image Comparison */}
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      VI. Image Comparison
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={4}>
-                        {imageData?.preview ? (
-                          <Box>
-                            <img
-                              src={imageData.preview}
-                              alt="Input X-ray"
-                              style={{ width: '100%', height: 'auto' }}
-                            />
-                            <Typography variant="caption" align="center" display="block">
-                              Input X-ray
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Paper 
-                            sx={{ 
-                              p: 2, 
-                              height: 150, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center' 
-                            }}
-                          >
-                            <Typography color="text.secondary">No image</Typography>
-                          </Paper>
-                        )}
-                      </Grid>
-                      <Grid item xs={4}>
-                        {visualizationData?.thermalView ? (
-                          <Box>
-                            <img
-                              src={imageData?.preview}
-                              alt="Thermal Overlay"
-                              style={{ width: '100%', height: 'auto' }}
-                            />
-                            <Typography variant="caption" align="center" display="block">
-                              Thermal Overlay
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Paper 
-                            sx={{ 
-                              p: 2, 
-                              height: 150, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center' 
-                            }}
-                          >
-                            <Typography color="text.secondary">No thermal overlay</Typography>
-                          </Paper>
-                        )}
-                      </Grid>
-                      <Grid item xs={4}>
-                        {visualizationData?.viewMode === '3d' ? (
-                          <Box>
-                            <img
-                              src={imageData?.preview}
-                              alt="3D View"
-                              style={{ width: '100%', height: 'auto' }}
-                            />
-                            <Typography variant="caption" align="center" display="block">
-                              3D View
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Paper 
-                            sx={{ 
-                              p: 2, 
-                              height: 150, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center' 
-                            }}
-                          >
-                            <Typography color="text.secondary">No 3D view</Typography>
-                          </Paper>
-                        )}
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Grid>
-              </Grid>
+              {/* Key Point Box */}
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  p: 3, 
+                  mb: 4, 
+                  backgroundColor: '#f0f0ff',
+                  border: '1px solid #000080',
+                  borderRadius: 2
+                }}
+              >
+                <Typography 
+                  variant="h6" 
+                  color="primary" 
+                  gutterBottom
+                  sx={{ color: '#000080' }}
+                >
+                  Key Point:
+                </Typography>
+                <Typography>
+                  A chest X-ray can raise strong suspicion for TB but <strong>cannot</strong> confirm diagnosis—combine with microbiology and clinical assessment before treatment decisions.
+                </Typography>
+              </Paper>
 
               <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>
                 <Button
@@ -517,12 +551,35 @@ function Report() {
           )}
         </Paper>
 
+        {/* Footer */}
+        <Box 
+          sx={{ 
+            mt: 2, 
+            pt: 2, 
+            borderTop: '2px solid #000080',
+            display: 'flex',
+            justifyContent: 'space-between',
+            color: '#808080'
+          }}
+        >
+          <Typography variant="body2">
+            Generated by TB Screening System
+          </Typography>
+          <Typography variant="body2">
+            Page 1
+          </Typography>
+        </Box>
+
         <Dialog
           open={showPasswordDialog}
           onClose={() => setShowPasswordDialog(false)}
         >
           <DialogTitle>Secure Your Report</DialogTitle>
           <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This password will be required to open the PDF. Please make sure to remember it
+              or share it securely with the intended recipients.
+            </Typography>
             <TextField
               autoFocus
               margin="dense"
@@ -531,7 +588,8 @@ function Report() {
               fullWidth
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              helperText="This password will be required to open the PDF"
+              error={Boolean(!password && error)}
+              helperText={!password && error ? error : ''}
             />
           </DialogContent>
           <DialogActions>

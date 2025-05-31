@@ -6,6 +6,10 @@ import {
   Typography,
   Box,
   Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Help,
@@ -14,15 +18,44 @@ import {
   ArrowBack,
   ArrowForward,
   Logout,
+  Menu as MenuIcon,
+  LightMode,
+  DarkMode,
 } from '@mui/icons-material';
+import { useState } from 'react';
 
 function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogout = () => {
+    handleMenuClose();
     // Add logout logic here
     navigate('/');
+  };
+
+  const handleContactUs = () => {
+    handleMenuClose();
+    // Add contact us navigation logic here
+    navigate('/welcome');
+  };
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    // You'll need to implement the actual theme change logic here
+    // This will depend on your theme implementation
+    document.body.style.backgroundColor = isDarkMode ? '#ffffff' : '#121212';
+    document.body.style.color = isDarkMode ? '#000000' : '#ffffff';
   };
 
   return (
@@ -31,22 +64,36 @@ function Layout({ children }) {
         <Toolbar>
           <IconButton
             size="large"
-            edge="start"
             color="inherit"
-            aria-label="help"
-            onClick={() => {/* Add help logic */}}
+            aria-label="menu"
+            onClick={handleMenuOpen}
+            sx={{ mr: 1 }}
           >
-            <Help />
+            <MenuIcon />
           </IconButton>
 
-          <IconButton
-            size="large"
-            color="inherit"
-            aria-label="contact"
-            onClick={() => {/* Add contact logic */}}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
           >
-            <ContactSupport />
-          </IconButton>
+            <MenuItem onClick={handleContactUs}>
+              <ListItemIcon>
+                <ContactSupport fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Contact Us</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <Logout fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          </Menu>
 
           <IconButton
             size="large"
@@ -57,24 +104,6 @@ function Layout({ children }) {
             <Home />
           </IconButton>
 
-          <IconButton
-            size="large"
-            color="inherit"
-            aria-label="back"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowBack />
-          </IconButton>
-
-          <IconButton
-            size="large"
-            color="inherit"
-            aria-label="forward"
-            onClick={() => navigate(1)}
-          >
-            <ArrowForward />
-          </IconButton>
-
           <Typography
             variant="h6"
             component="div"
@@ -83,13 +112,13 @@ function Layout({ children }) {
             TB Screening Portal
           </Typography>
 
-          <Button
+          <IconButton
             color="inherit"
-            onClick={handleLogout}
-            startIcon={<Logout />}
+            onClick={toggleTheme}
+            sx={{ ml: 1 }}
           >
-            Logout
-          </Button>
+            {isDarkMode ? <LightMode /> : <DarkMode />}
+          </IconButton>
         </Toolbar>
       </AppBar>
 
