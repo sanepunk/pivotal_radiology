@@ -81,7 +81,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
+        <Router basename="/app">
           <Routes>
             <Route path="/" element={<SignIn />} />
             <Route
