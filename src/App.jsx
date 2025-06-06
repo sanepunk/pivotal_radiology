@@ -66,7 +66,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   if (!token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   if (adminOnly && user.role !== 'admin') {

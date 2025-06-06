@@ -64,7 +64,7 @@ function PatientHistory() {
   };
 
   const getImageUrl = (file) => {
-    return `http://localhost:8000/files/${file.file_name}`;
+    return `http://localhost:8000/files/image/${file.file_name}`;
   };
 
   if (loading) {

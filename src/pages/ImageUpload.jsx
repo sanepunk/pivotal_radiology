@@ -11,6 +11,8 @@ import {
   TextField,
   CircularProgress,
   Autocomplete,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import Layout from '../components/Layout';
@@ -32,6 +34,7 @@ function ImageUpload() {
   const [searchText, setSearchText] = useState('');
   const [notes, setNotes] = useState('');
   const [doctorName, setDoctorName] = useState('');
+  const [isDicom, setIsDicom] = useState(false);
 
   useEffect(() => {
     // Fetch all patients when component mounts
@@ -61,14 +64,19 @@ function ImageUpload() {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'application/dicom') {
+      // If DICOM toggle is on, accept any file as DICOM
+      if (isDicom || file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'application/dicom') {
         setSelectedFile(file);
-        if (file.type !== 'application/dicom') {
+        // Only show preview for non-DICOM images
+        if (!isDicom && file.type !== 'application/dicom') {
           const reader = new FileReader();
           reader.onloadend = () => {
             setPreview(reader.result);
           };
           reader.readAsDataURL(file);
+        } else {
+          // Clear preview for DICOM files
+          setPreview('');
         }
         setError('');
       } else {
@@ -77,6 +85,13 @@ function ImageUpload() {
         setPreview('');
       }
     }
+  };
+
+  const handleDicomToggle = (event) => {
+    setIsDicom(event.target.checked);
+    // Clear selected file when toggling
+    setSelectedFile(null);
+    setPreview('');
   };
 
   const handleUpload = async () => {
@@ -103,6 +118,8 @@ function ImageUpload() {
       formData.append('file', selectedFile);
       formData.append('patientUid', patientData.uid);
       formData.append('doctor_name', doctorName);
+      // Send is_dicom flag to backend
+      formData.append('is_dicom', isDicom.toString());
       if (notes.trim()) {
         formData.append('notes', notes);
       }
@@ -119,7 +136,7 @@ function ImageUpload() {
           imageData: {
             fileName: selectedFile.name,
             fileType: selectedFile.type,
-            preview: preview,
+            preview: response.data.preview_url || preview,
             ...response.data
           }
         },
@@ -206,6 +223,26 @@ function ImageUpload() {
             sx={{ mb: 3 }}
           />
 
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isDicom}
+                  onChange={handleDicomToggle}
+                  color="primary"
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body1">DICOM Image</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    Toggle on if uploading DICOM format
+                  </Typography>
+                </Box>
+              }
+            />
+          </Box>
+
           <Box
             sx={{
               border: '2px dashed #ccc',
@@ -223,7 +260,7 @@ function ImageUpload() {
             <input
               type="file"
               id="file-input"
-              accept=".dcm,.png,.jpg,.jpeg"
+              accept={isDicom ? '.dcm' : '.png,.jpg,.jpeg,.dcm'}
               style={{ display: 'none' }}
               onChange={handleFileSelect}
               disabled={!patientData}
@@ -233,7 +270,7 @@ function ImageUpload() {
               {patientData ? 'Click to upload or drag and drop' : 'Please select a patient first'}
             </Typography>
             <Typography color="textSecondary">
-              Supported formats: DICOM, PNG, JPEG
+              {isDicom ? 'DICOM format only' : 'Supported formats: DICOM, PNG, JPEG'}
             </Typography>
           </Box>
 
@@ -261,6 +298,11 @@ function ImageUpload() {
                     }}
                   />
                 </Box>
+              )}
+              {isDicom && !preview && selectedFile && (
+                <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
+                  DICOM file preview not available. The image will be converted and displayed after upload.
+                </Alert>
               )}
               <TextField
                 fullWidth
