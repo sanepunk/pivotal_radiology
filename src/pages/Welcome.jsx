@@ -9,6 +9,8 @@ import {
   Typography,
   Box,
   Alert,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   PersonAdd,
@@ -16,6 +18,7 @@ import {
   CloudUpload,
   Assessment,
   People,
+  Logout,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import { useState, useEffect } from 'react';
@@ -42,43 +45,51 @@ function Welcome() {
       } catch (error) {
         console.error('Error verifying auth:', error);
         if (error.response?.status === 401) {
-          navigate('/login');
+          navigate('/app/auth');
         }
       }
     };
     checkAuth();
   }, [navigate]);
 
+  const handleLogout = () => {
+    // Clear authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Navigate back to landing page
+    navigate('/app');
+  };
+
   const cards = [
     {
       title: 'New Patient',
       description: 'Register a new patient and start TB screening',
       icon: <PersonAdd sx={{ fontSize: 40 }} />,
-      action: () => navigate('/patients/register'),
+      action: () => navigate('/app/patients/register'),
     },
     {
       title: 'Patient List',
       description: 'View and manage existing patient records',
       icon: <History sx={{ fontSize: 40 }} />,
-      action: () => navigate('/patients', { state: { message: 'Please select a patient to view their history' } }),
+      action: () => navigate('/app/patients', { state: { message: 'Please select a patient to view their history' } }),
     },
     {
       title: 'Upload X-ray/CT',
       description: 'Upload and analyze medical images',
       icon: <CloudUpload sx={{ fontSize: 40 }} />,
-      action: () => navigate('/upload'),
+      action: () => navigate('/app/upload'),
     },
     // {
     //   title: 'Reports',
     //   description: 'Generate and view TB screening reports',
     //   icon: <Assessment sx={{ fontSize: 40 }} />,
-    //   action: () => navigate('/report'),
+    //   action: () => navigate('/app/report'),
     // },
     ...(userData?.role === 'admin' ? [{
       title: 'Doctor Management',
       description: 'Manage doctors and their accounts',
       icon: <People sx={{ fontSize: 40 }} />,
-      action: () => navigate('/doctors'),
+      action: () => navigate('/app/doctors'),
     }] : []),
   ];
 
@@ -89,6 +100,18 @@ function Welcome() {
   return (
     <Layout>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <Tooltip title="Logout">
+            <IconButton 
+              onClick={handleLogout}
+              color="primary"
+              aria-label="logout"
+            >
+              <Logout />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
         {message && (
           <Alert 
             severity="success" 

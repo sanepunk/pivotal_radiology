@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -45,9 +45,17 @@ const registerValidationSchema = Yup.object({
 
 function SignIn() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Set default tab based on location state if provided
+  useEffect(() => {
+    if (location.state?.defaultTab === 'register') {
+      setMode('register');
+    }
+  }, [location.state]);
 
   const handleLogin = async (values, { setSubmitting }) => {
     setLoading(true);
