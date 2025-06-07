@@ -45,7 +45,7 @@ function Welcome() {
       } catch (error) {
         console.error('Error verifying auth:', error);
         if (error.response?.status === 401) {
-          navigate('/app/auth');
+          navigate('/auth');
         }
       }
     };
@@ -56,8 +56,8 @@ function Welcome() {
     // Clear authentication data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Navigate back to landing page
-    navigate('/app');
+    // Navigate back to landing page (root of the app)
+    navigate('/');
   };
 
   const cards = [
@@ -65,31 +65,31 @@ function Welcome() {
       title: 'New Patient',
       description: 'Register a new patient and start TB screening',
       icon: <PersonAdd sx={{ fontSize: 40 }} />,
-      action: () => navigate('/app/patients/register'),
+      action: () => navigate('/patients/register'),
     },
     {
       title: 'Patient List',
       description: 'View and manage existing patient records',
       icon: <History sx={{ fontSize: 40 }} />,
-      action: () => navigate('/app/patients', { state: { message: 'Please select a patient to view their history' } }),
+      action: () => navigate('/patients', { state: { message: 'Please select a patient to view their history' } }),
     },
     {
       title: 'Upload X-ray/CT',
       description: 'Upload and analyze medical images',
       icon: <CloudUpload sx={{ fontSize: 40 }} />,
-      action: () => navigate('/app/upload'),
+      action: () => navigate('/upload'),
     },
     // {
     //   title: 'Reports',
     //   description: 'Generate and view TB screening reports',
     //   icon: <Assessment sx={{ fontSize: 40 }} />,
-    //   action: () => navigate('/app/report'),
+    //   action: () => navigate('/report'),
     // },
     ...(userData?.role === 'admin' ? [{
       title: 'Doctor Management',
       description: 'Manage doctors and their accounts',
       icon: <People sx={{ fontSize: 40 }} />,
-      action: () => navigate('/app/doctors'),
+      action: () => navigate('/doctors'),
     }] : []),
   ];
 
@@ -100,18 +100,6 @@ function Welcome() {
   return (
     <Layout>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <Tooltip title="Logout">
-            <IconButton 
-              onClick={handleLogout}
-              color="primary"
-              aria-label="logout"
-            >
-              <Logout />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
         {message && (
           <Alert 
             severity="success" 

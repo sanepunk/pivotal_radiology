@@ -84,7 +84,7 @@ function LandingPage() {
                   <GradientButton 
                     variant="contained" 
                     size="large"
-                    onClick={() => navigate('/app/auth')}
+                    onClick={() => navigate('/auth')}
                   >
                     Login
                   </GradientButton>
@@ -93,7 +93,7 @@ function LandingPage() {
                   <GradientButton 
                     variant="contained" 
                     size="large"
-                    onClick={() => navigate('/app/auth', { state: { defaultTab: 'register' } })}
+                    onClick={() => navigate('/auth', { state: { defaultTab: 'register' } })}
                     color="secondary"
                   >
                     Register

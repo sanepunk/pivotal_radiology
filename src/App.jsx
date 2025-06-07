@@ -67,11 +67,11 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   if (!token) {
-    return <Navigate to="/app/auth" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (adminOnly && user.role !== 'admin') {
-    return <Navigate to="/app/welcome" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   return <Layout>{children}</Layout>;
@@ -82,97 +82,91 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
+        <Router basename='/app'>
           <Routes>
-            {/* Redirect root to /app */}
-            <Route path="/" element={<Navigate to="/app" replace />} />
-            
-            {/* App Routes */}
-            <Route path="/app">
-              <Route index element={<LandingPage />} />
-              <Route path="auth" element={<SignIn />} />
-              <Route
-                path="welcome"
-                element={
-                  <ProtectedRoute>
-                    <Welcome />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="patients"
-                element={
-                  <ProtectedRoute>
-                    <PatientListPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="patients/register"
-                element={
-                  <ProtectedRoute>
-                    <PatientRegistration />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="patients/:uid/history"
-                element={
-                  <ProtectedRoute>
-                    <PatientHistory />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="patients/:patientUid"
-                element={
-                  <ProtectedRoute>
-                    <PatientDetails />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="patients/:patientUid/edit"
-                element={
-                  <ProtectedRoute>
-                    <PatientForm />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="upload"
-                element={
-                  <ProtectedRoute>
-                    <ImageUpload />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="visualize"
-                element={
-                  <ProtectedRoute>
-                    <Visualization />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="report"
-                element={
-                  <ProtectedRoute>
-                    <Report />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="doctors"
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <DoctorManagement />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-            <Route path="*" element={<Navigate to="/app" replace />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<SignIn />} />
+            <Route
+              path="/welcome"
+              element={
+                <ProtectedRoute>
+                  <Welcome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients"
+              element={
+                <ProtectedRoute>
+                  <PatientListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/register"
+              element={
+                <ProtectedRoute>
+                  <PatientRegistration />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:uid/history"
+              element={
+                <ProtectedRoute>
+                  <PatientHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:patientUid"
+              element={
+                <ProtectedRoute>
+                  <PatientDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/patients/:patientUid/edit"
+              element={
+                <ProtectedRoute>
+                  <PatientForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload"
+              element={
+                <ProtectedRoute>
+                  <ImageUpload />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/visualize"
+              element={
+                <ProtectedRoute>
+                  <Visualization />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/report"
+              element={
+                <ProtectedRoute>
+                  <Report />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doctors"
+              element={
+                <ProtectedRoute adminOnly={true}>
+                  <DoctorManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </ThemeProvider>

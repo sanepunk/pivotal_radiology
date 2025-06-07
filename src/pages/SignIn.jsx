@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -45,17 +45,9 @@ const registerValidationSchema = Yup.object({
 
 function SignIn() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [mode, setMode] = useState('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // Set default tab based on location state if provided
-  useEffect(() => {
-    if (location.state?.defaultTab === 'register') {
-      setMode('register');
-    }
-  }, [location.state]);
 
   const handleLogin = async (values, { setSubmitting }) => {
     setLoading(true);
@@ -65,15 +57,36 @@ function SignIn() {
         email: values.email,
         password: values.password,
       });
-      console.log('Login response:', response.data);
-      const { access_token, token_type } = response.data;
-      const fullToken = `${token_type} ${access_token}`;
-      console.log('Storing token:', fullToken);
-      localStorage.setItem('token', fullToken);
-      navigate('/welcome');
+      
+      if (response && response.data) {
+        console.log('Login response:', response.data);
+        const { access_token, token_type } = response.data;
+        const fullToken = `${token_type} ${access_token}`;
+        localStorage.setItem('token', fullToken);
+        navigate('/welcome');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+      let errorMessage = 'Failed to login. Please check your credentials.';
+      
+      // Handle validation errors from FastAPI
+      if (err.response?.status === 422 && err.response?.data?.detail) {
+        // FastAPI validation errors are usually in the detail field
+        if (Array.isArray(err.response.data.detail)) {
+          // Format validation errors
+          errorMessage = err.response.data.detail
+            .map(err => `${err.loc.join('.')} - ${err.msg}`)
+            .join(', ');
+        } else {
+          errorMessage = err.response.data.detail;
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setSubmitting(false);
