@@ -21,7 +21,7 @@ import LandingPage from './pages/LandingPage';
 // Layout Component
 const Layout = ({ children }) => {
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth={false} disableGutters>
       <Box sx={{ py: 4 }}>
         {children}
       </Box>

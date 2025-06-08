@@ -5,7 +5,8 @@ import logo from '../assets/Icon.png';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: '3rem',
-  marginTop: '2rem',
+  marginTop: '-4rem',
+  paddingTop: '2rem',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -34,7 +35,7 @@ const HeroSection = styled(Box)(({ theme }) => ({
   backgroundImage: 'linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%)',
   padding: '4rem 0',
   borderRadius: '0 0 50% 50%/30%',
-  marginBottom: '3rem',
+  marginBottom: '1rem',
 }));
 
 const LogoImg = styled('img')({
@@ -58,7 +59,7 @@ function LandingPage() {
               fontWeight="700"
               sx={{ color: '#000080' }}
             >
-              TB Screening Portal
+              TB Screening System
             </Typography>
             <Typography variant="h5" gutterBottom sx={{ mb: 4, color: '#333' }}>
               Advanced Tuberculosis Detection and Patient Management
@@ -71,10 +72,10 @@ function LandingPage() {
         <Grid container spacing={4} justifyContent="center">
           <Grid item xs={12} md={10} lg={8}>
             <StyledPaper elevation={6}>
-              <Typography variant="h4" gutterBottom>
+              {/* <Typography variant="h4" gutterBottom>
                 Welcome to the TB Screening Portal
-              </Typography>
-              <Typography variant="body1" paragraph align="center" sx={{ maxWidth: '600px', mb: 4 }}>
+              </Typography> */}
+              <Typography variant="body1" paragraph align="center" sx={{ maxWidth: '600px', mb: 4, fontSize: '22px' }}>
                 Our platform provides healthcare professionals with tools for TB detection,
                 patient management, and analysis of medical imaging for more efficient diagnosis.
               </Typography>
@@ -84,7 +85,7 @@ function LandingPage() {
                   <GradientButton 
                     variant="contained" 
                     size="large"
-                    onClick={() => navigate('/auth')}
+                    onClick={() => navigate('/auth', { state: { defaultTab: 'login' }})}
                   >
                     Login
                   </GradientButton>
@@ -114,9 +115,20 @@ function LandingPage() {
           textAlign: 'center'
         }}
       >
-        <Typography variant="body2" color="text.secondary">
-          © {new Date().getFullYear()} TB Screening Portal. All rights reserved.
+        <Typography variant="body2" color="text.secondary" align="center">
+          Software is for binary TB detection only (colour-coded by severity).
+          Confirm with a physician.
         </Typography>
+        <Typography variant="body2" color="text.secondary" align="center">
+          © 2025 All rights reserved.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" align="center">
+          <Button color="inherit" size="small">Terms & Conditions</Button>
+          {' | '}
+          <Button color="inherit" size="small">Privacy Policy</Button>
+          {' | '}
+          <Button color="inherit" size="small">Disclaimer</Button>
+        </Typography> 
       </Box>
     </Box>
   );

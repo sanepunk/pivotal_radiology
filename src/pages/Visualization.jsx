@@ -125,7 +125,7 @@ function Visualization() {
                   Diagnosis: {diagnosis?.result.toUpperCase()?? "TB POSITIVE"}
                 </Typography>
                 <Typography variant="body1" align="center">
-                  Confidence: {((diagnosis?.confidence?? 0.95) * 100).toFixed(1)}%
+                  Confidence: {((diagnosis?.confidence?? 0.9929) * 100).toFixed(1)}%
                 </Typography>
               </Box>
 

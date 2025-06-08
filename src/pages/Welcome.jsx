@@ -63,7 +63,7 @@ function Welcome() {
   const cards = [
     {
       title: 'New Patient',
-      description: 'Register a new patient and start TB screening',
+      description: 'Register a new patient',
       icon: <PersonAdd sx={{ fontSize: 40 }} />,
       action: () => navigate('/patients/register'),
     },
@@ -74,7 +74,7 @@ function Welcome() {
       action: () => navigate('/patients', { state: { message: 'Please select a patient to view their history' } }),
     },
     {
-      title: 'Upload X-ray/CT',
+      title: 'Upload X-ray',
       description: 'Upload and analyze medical images',
       icon: <CloudUpload sx={{ fontSize: 40 }} />,
       action: () => navigate('/upload'),
@@ -99,11 +99,11 @@ function Welcome() {
 
   return (
     <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth={false} disableGutters sx={{ mt: 4, mb: 4 }}>
         {message && (
           <Alert 
             severity="success" 
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, mx: 2 }}
             onClose={() => {
               // Clear the message from location state
               window.history.replaceState({}, document.title)
@@ -119,41 +119,36 @@ function Welcome() {
           color="primary"
           gutterBottom
           align="center"
-          sx={{ mb: 4 }}
+          sx={{fontSize: '26px', fontWeight: 'bold', mb: 4}}
         >
-          Welcome to TB Screening Portal
+          TB Screening System
         </Typography>
 
-        <Grid 
-          container 
-          spacing={4} 
-          justifyContent="center"
-          alignItems="stretch"
+        <Box
           sx={{
-            maxWidth: userData?.role === 'admin' ? '100%' : '1000px',
-            margin: '0 auto'
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%'
           }}
         >
-          {cards.map((card, index) => (
-            <Grid 
-              item 
-              key={index} 
-              xs={12} 
-              sm={6} 
-              md={userData?.role === 'admin' ? 
-                (index === cards.length - 1 ? 12 : 6) : // Make the last card (Doctor Management) full width for admin
-                6
-              }
-              sx={{
-                display: 'flex',
-                justifyContent: 'center'
-              }}
-            >
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 300px)',
+              gridTemplateRows: 'auto',
+              gap: '30px',
+              maxWidth: '960px',
+              margin: '0 auto'
+            }}
+          >
+            {/* First row with three cards */}
+            {cards.slice(0, 3).map((card, index) => (
               <Card
+                key={index}
                 sx={{
                   width: '100%',
-                  maxWidth: '350px',
-                  height: '100%',
+                  height: '250px',
                   display: 'flex',
                   flexDirection: 'column',
                   transition: '0.3s',
@@ -163,7 +158,16 @@ function Welcome() {
                   },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1, textAlign: 'center' }}>
+                <CardContent 
+                  sx={{ 
+                    flexGrow: 1, 
+                    textAlign: 'center', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'center',
+                    padding: '16px'
+                  }}
+                >
                   <Box sx={{ mb: 2 }}>
                     {card.icon}
                   </Box>
@@ -174,20 +178,72 @@ function Welcome() {
                     {card.description}
                   </Typography>
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ padding: '16px' }}>
                   <Button
                     fullWidth
                     variant="contained"
                     onClick={card.action}
-                    sx={{ mx: 2, mb: 2 }}
                   >
                     {`Go to ${card.title}`}
                   </Button>
                 </CardActions>
               </Card>
-            </Grid>
-          ))}
-        </Grid>
+            ))}
+            
+            {/* Second row with Doctor Management centered if admin */}
+            {userData?.role === 'admin' && cards.length > 3 && (
+              <Box sx={{ 
+                gridColumn: '2',
+                gridRow: '2',
+                marginTop: '20px'
+              }}>
+                <Card
+                  sx={{
+                    width: '300px',
+                    height: '250px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: '0.3s',
+                    '&:hover': {
+                      transform: 'translateY(-5px)',
+                      boxShadow: 3,
+                    },
+                  }}
+                >
+                  <CardContent 
+                    sx={{ 
+                      flexGrow: 1, 
+                      textAlign: 'center', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'center',
+                      padding: '16px'
+                    }}
+                  >
+                    <Box sx={{ mb: 2 }}>
+                      {cards[3].icon}
+                    </Box>
+                    <Typography gutterBottom variant="h5" component="h2">
+                      {cards[3].title}
+                    </Typography>
+                    <Typography>
+                      {cards[3].description}
+                    </Typography>
+                  </CardContent>
+                  <CardActions sx={{ padding: '16px' }}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={cards[3].action}
+                    >
+                      {`Go to ${cards[3].title}`}
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Container>
     </Layout>
   );

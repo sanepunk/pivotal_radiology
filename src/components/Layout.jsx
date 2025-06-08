@@ -61,68 +61,69 @@ function Layout({ children }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static" sx={{ bgcolor: 'primary.main' }}>
-        <Toolbar>
-          <IconButton
-            size="large"
-            color="inherit"
-            aria-label="menu"
-            onClick={handleMenuOpen}
-            sx={{ mr: 1 }}
-          >
-            <MenuIcon />
-          </IconButton>
+        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton
+              size="large"
+              color="inherit"
+              aria-label="menu"
+              onClick={handleMenuOpen}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-          >
-            <MenuItem onClick={handleContactUs}>
-              <ListItemIcon>
-                <ContactSupport fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Contact Us</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Logout</ListItemText>
-            </MenuItem>
-          </Menu>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+            >
+              <MenuItem onClick={handleContactUs}>
+                <ListItemIcon>
+                  <ContactSupport fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Contact Us</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Logout</ListItemText>
+              </MenuItem>
+            </Menu>
 
-          <IconButton
-            size="large"
-            color="inherit"
-            aria-label="home"
-            onClick={() => navigate('/welcome')}
-          >
-            <Home />
-          </IconButton>
+            <IconButton
+              size="large"
+              color="inherit"
+              aria-label="home"
+              onClick={() => navigate('/welcome')}
+            >
+              <Home />
+            </IconButton>
+          </Box>
 
           <Typography
             variant="h6"
             component="div"
-            sx={{ flexGrow: 1, textAlign: 'center' }}
+            sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold' }}
           >
-            TB Screening Portal
+            TB Screening System
           </Typography>
 
           <IconButton
             color="inherit"
             onClick={toggleTheme}
-            sx={{ ml: 1 }}
           >
             {isDarkMode ? <LightMode /> : <DarkMode />}
           </IconButton>
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, py: 3, px: 0 }}>
         {children}
       </Box>
 
@@ -143,7 +144,7 @@ function Layout({ children }) {
           Confirm with a physician.
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center">
-          © 2025 Pivotal Teleradiology. All rights reserved.
+          © 2025 All rights reserved.
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center">
           <Button color="inherit" size="small">Terms & Conditions</Button>

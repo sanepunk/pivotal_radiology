@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -45,7 +45,9 @@ const registerValidationSchema = Yup.object({
 
 function SignIn() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('login');
+  const location = useLocation();
+  const defaultTab = location.state?.defaultTab || 'login';
+  const [mode, setMode] = useState(defaultTab);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -115,19 +117,21 @@ function SignIn() {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Container component="main" maxWidth={false} disableGutters>
       <Paper
         elevation={3}
         sx={{
           p: 4,
           mt: 8,
+          mx: 'auto', 
+          maxWidth: 'sm',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
         }}
       >
-        <Typography component="h1" variant="h4" color="primary" gutterBottom>
-          TB Screening Portal
+        <Typography component="h1" variant="h4" color="primary" gutterBottom sx={{ fontSize: '26px', fontWeight: 'bold' }}>
+          TB Screening System
         </Typography>
 
         <Tabs

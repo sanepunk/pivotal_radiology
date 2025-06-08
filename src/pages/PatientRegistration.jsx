@@ -70,12 +70,14 @@ function PatientRegistration() {
 
   return (
     <Layout>
-      <Container component="main" maxWidth="md">
+      <Container component="main" maxWidth={false} disableGutters>
         <Paper
           elevation={3}
           sx={{
             p: 4,
             mt: 8,
+            mx: 'auto',
+            maxWidth: 'md',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -233,7 +235,7 @@ function PatientRegistration() {
                     sx={{ mt: 3, mb: 2 }}
                     disabled={isSubmitting || loading}
                   >
-                    {loading ? 'Registering...' : 'Register Patient'}
+                    {loading ? 'Registering...' : 'Register'}
                   </Button>
                 </Box>
               </Form>

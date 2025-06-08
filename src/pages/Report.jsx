@@ -32,7 +32,7 @@ function Report() {
   const location = useLocation();
   const navigate = useNavigate();
   const { patientData, imageData, diagnosis, visualizationData } = location.state || {};
-  const tbConfidence = 95; // This would come from your ML model in reality
+  const tbConfidence = 99.26; // This would come from your ML model in reality
 
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);

@@ -97,7 +97,7 @@ function DoctorManagement() {
                 <TableRow>
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
+                  <TableCell>Designation</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
