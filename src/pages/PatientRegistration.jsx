@@ -53,16 +53,18 @@ function PatientRegistration() {
         date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
       });
       
-      // After successful registration, navigate to welcome page
-      navigate('/welcome', { 
+      // Navigate to success page with patient data
+      navigate('/patient-register-success', { 
         state: { 
-          message: 'Patient registered successfully',
-          patientId: response.data.uid 
+          patientData: {
+            ...values,
+            uid: response.data.uid,
+            date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
+          }
         }
       });
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to register patient. Please try again.');
-    } finally {
       setLoading(false);
       setSubmitting(false);
     }

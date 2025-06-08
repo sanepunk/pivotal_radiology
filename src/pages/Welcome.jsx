@@ -56,8 +56,8 @@ function Welcome() {
     // Clear authentication data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Navigate back to landing page (root of the app)
-    navigate('/');
+    // Navigate to landing page with proper trailing slash
+    window.location.href = '/app/';
   };
 
   const cards = [

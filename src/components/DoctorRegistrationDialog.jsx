@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTitle,
@@ -35,11 +36,23 @@ const validationSchema = Yup.object({
 
 function DoctorRegistrationDialog({ open, onClose, onSuccess }) {
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       await authAPI.register(values);
       onSuccess();
+      
+      // Navigate to success page with doctor data
+      navigate('/doctor-register-success', {
+        state: {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          role: values.role
+        }
+      });
+      
       onClose();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register doctor. Please try again.');

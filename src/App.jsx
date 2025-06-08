@@ -17,6 +17,8 @@ import PatientListPage from './pages/PatientListPage';
 import PatientDetails from './components/PatientDetails';
 import DoctorManagement from './pages/DoctorManagement';
 import LandingPage from './pages/LandingPage';
+import DoctorRegisterSuccess from './pages/DoctorRegisterSuccess';
+import PatientRegisterSuccess from './pages/PatientRegisterSuccess';
 
 // Layout Component
 const Layout = ({ children }) => {
@@ -48,15 +50,44 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'Times New Roman',
-    body1: {
-      fontSize: '12pt',
-    },
-    h4: {
-      fontSize: '16pt',
+    fontFamily: '"Lato", sans-serif',
+    fontWeightBold: 700,
+    fontWeightMedium: 600,
+    fontWeightRegular: 500,
+    h1: {
+      fontSize: '26pt',
+      fontWeight: 700,
     },
     h2: {
+      fontSize: '24pt',
+      fontWeight: 700,
+    },
+    h3: {
+      fontSize: '22pt',
+      fontWeight: 700,
+    },
+    h4: {
       fontSize: '20pt',
+      fontWeight: 700,
+    },
+    h5: {
+      fontSize: '18pt',
+      fontWeight: 700,
+    },
+    h6: {
+      fontSize: '16pt',
+      fontWeight: 700,
+    },
+    body1: {
+      fontSize: '12pt',
+      fontWeight: 500,
+    },
+    body2: {
+      fontSize: '11pt',
+      fontWeight: 500,
+    },
+    button: {
+      fontWeight: 600,
     },
   },
 });
@@ -86,6 +117,8 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<SignIn />} />
+            <Route path="/doctor-register-success" element={<DoctorRegisterSuccess />} />
+            <Route path="/patient-register-success" element={<PatientRegisterSuccess />} />
             <Route
               path="/welcome"
               element={

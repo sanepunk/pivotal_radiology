@@ -43,7 +43,7 @@ api.interceptors.response.use(
         // Unauthorized - clear token and redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/app/auth'; // Using auth route
+        window.location.href = '/app/auth'; // Using auth route without trailing slash
       }
       return Promise.reject(error);
     } else if (error.request) {

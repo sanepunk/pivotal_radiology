@@ -23,6 +23,7 @@ import {
   DarkMode,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import { authAPI } from '../services/api';
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -40,8 +41,10 @@ function Layout({ children }) {
 
   const handleLogout = () => {
     handleMenuClose();
-    // Add logout logic here
-    navigate('/');
+    // Clear authentication data
+    authAPI.logout();
+    // Navigate to landing page with proper trailing slash
+    window.location.href = '/app/';
   };
 
   const handleContactUs = () => {
@@ -107,9 +110,15 @@ function Layout({ children }) {
           </Box>
 
           <Typography
-            variant="h6"
+            variant="h1"
             component="div"
-            sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold' }}
+            sx={{ 
+              position: 'absolute', 
+              left: '50%', 
+              transform: 'translateX(-50%)', 
+              fontWeight: 'bold',
+              fontSize: '26px' 
+            }}
           >
             TB Screening System
           </Typography>

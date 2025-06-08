@@ -99,18 +99,25 @@ function SignIn() {
     setLoading(true);
     setError('');
     try {
-      await authAPI.register({
+      const response = await authAPI.register({
         name: values.name,
         email: values.email,
         role: values.role,
         password: values.password,
         confirmPassword: values.confirmPassword,
       });
-      setMode('login');
-      setError('Registration successful! Please login.');
+      
+      // Navigate to success page with credentials
+      navigate('/doctor-register-success', {
+        state: {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          role: values.role
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to register. Please try again.');
-    } finally {
       setLoading(false);
       setSubmitting(false);
     }
@@ -130,7 +137,12 @@ function SignIn() {
           alignItems: 'center',
         }}
       >
-        <Typography component="h1" variant="h4" color="primary" gutterBottom sx={{ fontSize: '26px', fontWeight: 'bold' }}>
+        <Typography 
+          component="h1" 
+          variant="h1" 
+          color="primary" 
+          gutterBottom
+        >
           TB Screening System
         </Typography>
 
