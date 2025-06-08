@@ -12,11 +12,13 @@ import {
   CircularProgress,
   Autocomplete,
   FormControlLabel,
-  Switch,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import Layout from '../components/Layout';
-import LoadingTips from '../components/LoadingTips';
 import { fileAPI, patientAPI } from '../services/api';
 
 function ImageUpload() {
@@ -31,16 +33,15 @@ function ImageUpload() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
-  const [searchText, setSearchText] = useState('');
-  const [notes, setNotes] = useState('');
+  const [searchText, setSearchText] = useState('');  const [notes, setNotes] = useState('');
   const [doctorName, setDoctorName] = useState('');
-  const [isDicom, setIsDicom] = useState(false);
+  const [fileType, setFileType] = useState('dicom'); // Default to DICOM
 
   useEffect(() => {
     // Fetch all patients when component mounts
     fetchPatients();
   }, []);
-
+  
   const fetchPatients = async () => {
     try {
       const response = await patientAPI.getPatients();
@@ -60,15 +61,19 @@ function ImageUpload() {
       setPatientData(null);
     }
   };
-
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // If DICOM toggle is on, accept any file as DICOM
-      if (isDicom || file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'application/dicom') {
+      // Check if file is valid based on selected file type
+      const isDicom = fileType === 'dicom';
+      const isImage = file.type === 'image/png' || file.type === 'image/jpeg';
+      
+      // Accept file if it matches the selected type
+      if ((isDicom) || (!isDicom && isImage)) {
         setSelectedFile(file);
-        // Only show preview for non-DICOM images
-        if (!isDicom && file.type !== 'application/dicom') {
+        
+        // Only show preview for image files
+        if (!isDicom && isImage) {
           const reader = new FileReader();
           reader.onloadend = () => {
             setPreview(reader.result);
@@ -80,16 +85,18 @@ function ImageUpload() {
         }
         setError('');
       } else {
-        setError('Please upload a valid DICOM, PNG, or JPEG file');
+        setError(isDicom 
+          ? 'Please upload a valid DICOM file' 
+          : 'Please upload a valid PNG or JPEG image');
         setSelectedFile(null);
         setPreview('');
       }
     }
   };
 
-  const handleDicomToggle = (event) => {
-    setIsDicom(event.target.checked);
-    // Clear selected file when toggling
+  const handleFileTypeChange = (event) => {
+    setFileType(event.target.value);
+    // Clear selected file when changing file type
     setSelectedFile(null);
     setPreview('');
   };
@@ -113,13 +120,12 @@ function ImageUpload() {
     setUploading(true);
     setProgress(0);
 
-    try {
-      const formData = new FormData();
+    try {      const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('patientUid', patientData.uid);
       formData.append('doctor_name', doctorName);
-      // Send is_dicom flag to backend
-      formData.append('is_dicom', isDicom.toString());
+      // Send is_dicom flag to backend based on radio button selection
+      formData.append('is_dicom', (fileType === 'dicom').toString());
       if (notes.trim()) {
         formData.append('notes', notes);
       }
@@ -210,9 +216,7 @@ function ImageUpload() {
             <Alert severity="success" sx={{ mb: 3 }}>
               Patient selected: {patientData.name} (ID: {patientData.uid})
             </Alert>
-          )}
-
-          <TextField
+          )}          <TextField
             fullWidth
             required
             label="Doctor Name"
@@ -223,25 +227,42 @@ function ImageUpload() {
             sx={{ mb: 3 }}
           />
 
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={isDicom}
-                  onChange={handleDicomToggle}
-                  color="primary"
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body1">DICOM Image</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Toggle on if uploading DICOM format
-                  </Typography>
-                </Box>
-              }
-            />
-          </Box>
+          <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
+            <FormLabel component="legend">Image Type</FormLabel>
+            <RadioGroup
+              row
+              name="file-type-radio"
+              value={fileType}
+              onChange={handleFileTypeChange}
+              sx={{ justifyContent: 'center' }}
+            >
+              <FormControlLabel 
+                value="dicom" 
+                control={<Radio />} 
+                label={
+                  <Box>
+                    <Typography variant="body1">DICOM</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Medical imaging format
+                    </Typography>
+                  </Box>
+                }
+                sx={{ mr: 4 }}
+              />
+              <FormControlLabel 
+                value="image" 
+                control={<Radio />} 
+                label={
+                  <Box>
+                    <Typography variant="body1">Image (PNG/JPG)</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Standard image formats
+                    </Typography>
+                  </Box>
+                }
+              />
+            </RadioGroup>
+          </FormControl>
 
           <Box
             sx={{
@@ -260,7 +281,7 @@ function ImageUpload() {
             <input
               type="file"
               id="file-input"
-              accept={isDicom ? '.dcm' : '.png,.jpg,.jpeg,.dcm'}
+              accept={fileType === 'dicom' ? '.dcm' : '.png,.jpg,.jpeg'}
               style={{ display: 'none' }}
               onChange={handleFileSelect}
               disabled={!patientData}
@@ -268,9 +289,8 @@ function ImageUpload() {
             <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
               {patientData ? 'Click to upload or drag and drop' : 'Please select a patient first'}
-            </Typography>
-            <Typography color="textSecondary">
-              {isDicom ? ' ' : ' '}
+            </Typography>            <Typography color="textSecondary">
+              {fileType === 'dicom' ? 'Select a DICOM (.dcm) file' : 'Select an image (.png or .jpg) file'}
             </Typography>
           </Box>
 
@@ -298,8 +318,7 @@ function ImageUpload() {
                     }}
                   />
                 </Box>
-              )}
-              {isDicom && !preview && selectedFile && (
+              )}              {fileType === 'dicom' && !preview && selectedFile && (
                 <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
                   DICOM file preview not available. The image will be converted and displayed after upload.
                 </Alert>
@@ -314,9 +333,14 @@ function ImageUpload() {
                 sx={{ mt: 2 }}
               />
             </Box>
+          )}          {uploading && (
+            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" my={4}>
+              <CircularProgress size={60} thickness={4} color="primary" value={progress} variant="determinate" />
+              <Typography variant="h6" color="primary" mt={2}>
+                Uploading image...
+              </Typography>
+            </Box>
           )}
-
-          {uploading && <LoadingTips progress={progress} />}
 
           <Button
             variant="contained"

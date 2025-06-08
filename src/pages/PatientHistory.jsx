@@ -41,7 +41,11 @@ function PatientHistory() {
         ]);
         
         setPatient(patientResponse.data);
-        setFiles(filesResponse.data || []);
+        const sortedFiles = filesResponse.data || [];
+      sortedFiles.sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date));
+      
+        setFiles(sortedFiles);
+        // setFiles(filesResponse.data || []);
       } catch (error) {
         console.error('Error fetching patient data:', error);
         setError('Error loading patient data');
@@ -153,7 +157,7 @@ function PatientHistory() {
                 {files.map((file) => (
                   <TableRow key={file._id}>
                     <TableCell>
-                      {format(new Date(file.upload_date), 'MM/dd/yyyy')}
+                      {format(new Date(file.upload_date), 'dd/MM/yyyy')}
                     </TableCell>
                     <TableCell>{file.doctor_name}</TableCell>
                     <TableCell>TB POSITIVE</TableCell>

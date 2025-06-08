@@ -134,7 +134,7 @@ const PatientList = () => {
                   <TableCell>{patient.uid}</TableCell>
                   <TableCell>{patient.name}</TableCell>
                   <TableCell>
-                    {patient.date_of_birth ? format(new Date(patient.date_of_birth), 'MM/dd/yyyy') : 'N/A'}
+                    {patient.date_of_birth ? format(new Date(patient.date_of_birth), 'dd/MM/yyyy') : 'N/A'}
                   </TableCell>
                   <TableCell>{patient.gender || 'N/A'}</TableCell>
                   <TableCell>
