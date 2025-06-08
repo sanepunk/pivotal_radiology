@@ -21,6 +21,7 @@ import {
   Logout,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import BackgroundWrapper from '../components/BackgroundWrapper';
 import { useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
@@ -99,107 +100,56 @@ function Welcome() {
 
   return (
     <Layout>
-      <Container maxWidth={false} disableGutters sx={{ mt: 4, mb: 4 }}>
-        {message && (
-          <Alert 
-            severity="success" 
-            sx={{ mb: 3, mx: 2 }}
-            onClose={() => {
-              // Clear the message from location state
-              window.history.replaceState({}, document.title)
-            }}
+      <BackgroundWrapper>
+        <Container maxWidth={false} disableGutters sx={{ mt: 4, mb: 4 }}>
+          {message && (
+            <Alert 
+              severity="success" 
+              sx={{ mb: 3, mx: 2 }}
+              onClose={() => {
+                // Clear the message from location state
+                window.history.replaceState({}, document.title)
+              }}
+            >
+              {message}
+            </Alert>
+          )}
+          
+          <Typography
+            component="h1"
+            variant="h4"
+            color="primary"
+            gutterBottom
+            align="center"
+            sx={{fontSize: '26px', fontWeight: 'bold', mb: 4}}
           >
-            {message}
-          </Alert>
-        )}
-        
-        <Typography
-          component="h1"
-          variant="h4"
-          color="primary"
-          gutterBottom
-          align="center"
-          sx={{fontSize: '26px', fontWeight: 'bold', mb: 4}}
-        >
-          TB Screening System
-        </Typography>
+            TB Screening System
+          </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%'
-          }}
-        >
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 300px)',
-              gridTemplateRows: 'auto',
-              gap: '30px',
-              maxWidth: '960px',
-              margin: '0 auto'
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%'
             }}
           >
-            {/* First row with three cards */}
-            {cards.slice(0, 3).map((card, index) => (
-              <Card
-                key={index}
-                sx={{
-                  width: '100%',
-                  height: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: '0.3s',
-                  '&:hover': {
-                    transform: 'translateY(-5px)',
-                    boxShadow: 3,
-                  },
-                }}
-              >
-                <CardContent 
-                  sx={{ 
-                    flexGrow: 1, 
-                    textAlign: 'center', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    justifyContent: 'center',
-                    padding: '16px'
-                  }}
-                >
-                  <Box sx={{ mb: 2 }}>
-                    {card.icon}
-                  </Box>
-                  <Typography gutterBottom variant="h5" component="h2">
-                    {card.title}
-                  </Typography>
-                  <Typography>
-                    {card.description}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ padding: '16px' }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={card.action}
-                  >
-                    {`Go to ${card.title}`}
-                  </Button>
-                </CardActions>
-              </Card>
-            ))}
-            
-            {/* Second row with Doctor Management centered if admin */}
-            {userData?.role === 'admin' && cards.length > 3 && (
-              <Box sx={{ 
-                gridColumn: '2',
-                gridRow: '2',
-                marginTop: '20px'
-              }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 300px)',
+                gridTemplateRows: 'auto',
+                gap: '30px',
+                maxWidth: '960px',
+                margin: '0 auto'
+              }}
+            >
+              {/* First row with three cards */}
+              {cards.slice(0, 3).map((card, index) => (
                 <Card
+                  key={index}
                   sx={{
-                    width: '300px',
+                    width: '100%',
                     height: '250px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -221,30 +171,83 @@ function Welcome() {
                     }}
                   >
                     <Box sx={{ mb: 2 }}>
-                      {cards[3].icon}
+                      {card.icon}
                     </Box>
                     <Typography gutterBottom variant="h5" component="h2">
-                      {cards[3].title}
+                      {card.title}
                     </Typography>
                     <Typography>
-                      {cards[3].description}
+                      {card.description}
                     </Typography>
                   </CardContent>
                   <CardActions sx={{ padding: '16px' }}>
                     <Button
                       fullWidth
                       variant="contained"
-                      onClick={cards[3].action}
+                      onClick={card.action}
                     >
-                      {`Go to ${cards[3].title}`}
+                      {`Go to ${card.title}`}
                     </Button>
                   </CardActions>
                 </Card>
-              </Box>
-            )}
+              ))}
+              
+              {/* Second row with Doctor Management centered if admin */}
+              {userData?.role === 'admin' && cards.length > 3 && (
+                <Box sx={{ 
+                  gridColumn: '2',
+                  gridRow: '2',
+                  marginTop: '20px'
+                }}>
+                  <Card
+                    sx={{
+                      width: '300px',
+                      height: '250px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: '0.3s',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: 3,
+                      },
+                    }}
+                  >
+                    <CardContent 
+                      sx={{ 
+                        flexGrow: 1, 
+                        textAlign: 'center', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        justifyContent: 'center',
+                        padding: '16px'
+                      }}
+                    >
+                      <Box sx={{ mb: 2 }}>
+                        {cards[3].icon}
+                      </Box>
+                      <Typography gutterBottom variant="h5" component="h2">
+                        {cards[3].title}
+                      </Typography>
+                      <Typography>
+                        {cards[3].description}
+                      </Typography>
+                    </CardContent>
+                    <CardActions sx={{ padding: '16px' }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={cards[3].action}
+                      >
+                        {`Go to ${cards[3].title}`}
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Box>
+              )}
+            </Box>
           </Box>
-        </Box>
-      </Container>
+        </Container>
+      </BackgroundWrapper>
     </Layout>
   );
 }

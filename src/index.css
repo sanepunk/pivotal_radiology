@@ -11,10 +11,45 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+/* Fallback body background for maximum reliability */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('./assets/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  z-index: -10;
+  pointer-events: none;
+}
+
+html, body {
   margin: 0;
+  padding: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Remove default spacing from all MUI containers */
+.MuiContainer-root {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove margin from AppBar */
+.MuiAppBar-root {
+  margin: 0;
+}
+
+/* No margin for footer */
+footer {
+  margin-bottom: 0 !important;
 }
 
 * {

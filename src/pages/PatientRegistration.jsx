@@ -18,6 +18,9 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
 import Layout from '../components/Layout';
+import BackgroundWrapper from '../components/BackgroundWrapper';
+import BackgroundImage from '../components/BackgroundImage';
+import MedicalPaper from '../components/MedicalPaper';
 
 const validationSchema = Yup.object({
   name: Yup.string().required('Full name is required'),
@@ -72,17 +75,14 @@ function PatientRegistration() {
 
   return (
     <Layout>
-      <Container component="main" maxWidth={false} disableGutters>
-        <Paper
+      <BackgroundImage />
+      
+      <Container component="main" maxWidth="lg">
+        <MedicalPaper
           elevation={3}
           sx={{
-            p: 4,
-            mt: 8,
-            mx: 'auto',
             maxWidth: 'md',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            mx: 'auto',
           }}
         >
           <Typography component="h1" variant="h4" color="primary" gutterBottom>
@@ -243,7 +243,7 @@ function PatientRegistration() {
               </Form>
             )}
           </Formik>
-        </Paper>
+        </MedicalPaper>
       </Container>
     </Layout>
   );

@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Box } from '@mui/material';
+import lungImage from './assets/background.jpg';
 
 // Pages
 import SignIn from './pages/SignIn';
@@ -19,12 +20,43 @@ import DoctorManagement from './pages/DoctorManagement';
 import LandingPage from './pages/LandingPage';
 import DoctorRegisterSuccess from './pages/DoctorRegisterSuccess';
 import PatientRegisterSuccess from './pages/PatientRegisterSuccess';
+import LungBackground from './components/LungBackground';
+import TestBackground from './pages/TestBackground';
 
 // Layout Component
 const Layout = ({ children }) => {
+  const location = useLocation();
+  const path = location.pathname;
+  
+  // Skip background for landing page, report page, and PDF page
+  const excludedPaths = ['/', '/report', '/pdf'];
+  const shouldShowBackground = !excludedPaths.some(excludedPath => 
+    path === excludedPath || path === excludedPath + '/'
+  );
+
   return (
-    <Container maxWidth={false} disableGutters>
-      <Box sx={{ py: 4 }}>
+    <Container maxWidth={false} disableGutters sx={{ margin: 0, padding: 0 }}>
+      {shouldShowBackground && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            margin: 0,
+            padding: 0,
+            backgroundImage: `url(${lungImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.25,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      <Box sx={{ position: 'relative', zIndex: 1, margin: 0, padding: 0 }}>
         {children}
       </Box>
     </Container>
@@ -44,9 +76,32 @@ const theme = createTheme({
   palette: {
     primary: {
       main: '#000080', // Navy Blue
+      dark: '#000066', // Darker navy for hover states
+      contrastText: '#ffffff', // White text for better contrast
+    },
+    secondary: {
+      main: '#1976d2', // Blue accent color
     },
     background: {
       default: '#ffffff',
+      paper: '#ffffff',
+    },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 4px 20px rgba(0, 0, 128, 0.25)',
+          backgroundImage: 'linear-gradient(45deg, #000080 30%, #0d47a1 90%)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
     },
   },
   typography: {
@@ -113,95 +168,104 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router basename='/app'>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<SignIn />} />
-            <Route path="/doctor-register-success" element={<DoctorRegisterSuccess />} />
-            <Route path="/patient-register-success" element={<PatientRegisterSuccess />} />
-            <Route
-              path="/welcome"
-              element={
-                <ProtectedRoute>
-                  <Welcome />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients"
-              element={
-                <ProtectedRoute>
-                  <PatientListPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/register"
-              element={
-                <ProtectedRoute>
-                  <PatientRegistration />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/:uid/history"
-              element={
-                <ProtectedRoute>
-                  <PatientHistory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/:patientUid"
-              element={
-                <ProtectedRoute>
-                  <PatientDetails />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/patients/:patientUid/edit"
-              element={
-                <ProtectedRoute>
-                  <PatientForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/upload"
-              element={
-                <ProtectedRoute>
-                  <ImageUpload />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/visualize"
-              element={
-                <ProtectedRoute>
-                  <Visualization />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/report"
-              element={
-                <ProtectedRoute>
-                  <Report />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/doctors"
-              element={
-                <ProtectedRoute adminOnly={true}>
-                  <DoctorManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+        <Box sx={{ 
+          margin: 0, 
+          padding: 0, 
+          minHeight: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column' 
+        }}>
+          <Router basename='/app'>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<SignIn />} />
+              <Route path="/doctor-register-success" element={<DoctorRegisterSuccess />} />
+              <Route path="/patient-register-success" element={<PatientRegisterSuccess />} />
+              <Route path="/test-background" element={<TestBackground />} />
+              <Route
+                path="/welcome"
+                element={
+                  <ProtectedRoute>
+                    <Welcome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients"
+                element={
+                  <ProtectedRoute>
+                    <PatientListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients/register"
+                element={
+                  <ProtectedRoute>
+                    <PatientRegistration />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients/:uid/history"
+                element={
+                  <ProtectedRoute>
+                    <PatientHistory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients/:patientUid"
+                element={
+                  <ProtectedRoute>
+                    <PatientDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/patients/:patientUid/edit"
+                element={
+                  <ProtectedRoute>
+                    <PatientForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/upload"
+                element={
+                  <ProtectedRoute>
+                    <ImageUpload />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/visualize"
+                element={
+                  <ProtectedRoute>
+                    <Visualization />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/report"
+                element={
+                  <ProtectedRoute>
+                    <Report />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/doctors"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <DoctorManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </Box>
       </ThemeProvider>
     </QueryClientProvider>
   );
