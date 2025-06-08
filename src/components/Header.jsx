@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -15,21 +15,21 @@ import {
 import {
   Home,
   MenuOpen,
-  DarkMode,
-  LightMode,
   Logout,
   ContactSupport,
+  ArrowBack,
+  ArrowForward,
 } from '@mui/icons-material';
 import { authAPI } from '../services/api';
 
 /**
  * Header component for the TB Screening System
- * Includes navigation, menu, and theme toggle
+ * Includes navigation, menu, and back/forward navigation
  */
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -47,9 +47,12 @@ const Header = () => {
     window.location.href = '/app/';
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    // Theme change logic here
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  const handleGoForward = () => {
+    navigate(1);
   };
 
   return (
@@ -66,14 +69,14 @@ const Header = () => {
         padding: 0,
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
+      <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Tooltip title="Menu">
             <IconButton 
               color="inherit" 
               onClick={handleMenuOpen}
               sx={{ 
-                mr: 2,
+                mr: 1,
                 color: 'white', 
                 '&:hover': { 
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -121,6 +124,7 @@ const Header = () => {
               color="inherit" 
               onClick={() => navigate('/welcome')}
               sx={{ 
+                mr: 1,
                 color: 'white', 
                 '&:hover': { 
                   backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -130,37 +134,63 @@ const Header = () => {
               <Home />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="Go Back">
+            <IconButton 
+              color="inherit" 
+              onClick={handleGoBack}
+              sx={{ 
+                mr: 1,
+                color: 'white', 
+                '&:hover': { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                } 
+              }}
+            >
+              <ArrowBack />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Go Forward">
+            <IconButton 
+              color="inherit" 
+              onClick={handleGoForward}
+              sx={{ 
+                color: 'white', 
+                '&:hover': { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                } 
+              }}
+            >
+              <ArrowForward />
+            </IconButton>
+          </Tooltip>
         </Box>
 
+        {/* Centered Title */}
         <Typography
           variant="h6"
           component="div"
           sx={{ 
+            flexGrow: 1,
             fontWeight: 700,
             fontSize: '24px',
             color: 'white',
             textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
             letterSpacing: '0.5px',
+            textAlign: 'center',
           }}
         >
           TB Screening System
         </Typography>
 
-        <Tooltip title={isDarkMode ? "Light Mode" : "Dark Mode"}>
-          <IconButton
-            color="inherit"
-            onClick={toggleTheme}
-            edge="end"
-            sx={{ 
-              color: 'white', 
-              '&:hover': { 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              } 
-            }}
-          >
-            {isDarkMode ? <LightMode /> : <DarkMode />}
-          </IconButton>
-        </Tooltip>
+        {/* Empty box to balance the layout */}
+        <Box sx={{ display: 'flex', visibility: 'hidden' }}>
+          <IconButton sx={{ width: 40 }}><MenuOpen /></IconButton>
+          <IconButton sx={{ width: 40 }}><Home /></IconButton>
+          <IconButton sx={{ width: 40 }}><ArrowBack /></IconButton>
+          <IconButton sx={{ width: 40 }}><ArrowForward /></IconButton>
+        </Box>
       </Toolbar>
     </AppBar>
   );

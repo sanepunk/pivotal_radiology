@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Typography,
+  Paper
 } from '@mui/material';
 import { useState } from 'react';
 import Header from './Header';
@@ -15,6 +16,9 @@ function Layout({ children }) {
       minHeight: '100vh',
       margin: 0,
       padding: 0,
+      position: 'relative',
+      zIndex: 1,
+      width: '100%',
     }}>
       <Header />
 
@@ -26,6 +30,8 @@ function Layout({ children }) {
           px: 0,
           margin: 0,
           padding: 0,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {children}
@@ -42,6 +48,10 @@ function Layout({ children }) {
               ? theme.palette.grey[200]
               : theme.palette.grey[800],
           marginBottom: 0,
+          position: 'relative',
+          zIndex: 2,
+          boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
+          width: '100%',
         }}
       >
         <Typography variant="body2" color="text.secondary" align="center">
@@ -49,7 +59,7 @@ function Layout({ children }) {
           Confirm with a physician.
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center">
-          © 2025 All rights reserved.
+          © 2025 PIVOTAL TELERADIOLOGY LLP. All rights reserved.
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center">
           <Button color="inherit" size="small">Terms & Conditions</Button>

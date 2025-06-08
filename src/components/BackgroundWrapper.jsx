@@ -36,59 +36,38 @@ const BackgroundWrapper = ({ children }) => {
     };
   }, []);
 
-  // Ensure the background image is applied with inline style as well as sx prop
-  const backgroundStyle = {
+  // Use the imported image directly - this is the most reliable approach with Vite
+  const directBackgroundStyle = {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.5,
+    zIndex: -1, // Make sure this is below the content and footer
+    filter: 'contrast(1.2) brightness(0.9) saturate(1.1)',
   };
 
   return (
-    <Box sx={{ 
-      position: 'relative', 
-      minHeight: '100vh', 
-      margin: 0, 
-      padding: 0,
+    <Box sx={{
+      position: 'relative',
+      zIndex: 1,
       display: 'flex',
       flexDirection: 'column',
+      width: '100%',
+      flexGrow: 1, // Take available space, but allow footer to be visible
     }}>
-      {/* Background Image with improved visibility */}
-      <Box
-        style={backgroundStyle}
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          margin: 0,
-          padding: 0,
-          backgroundImage: `url(${backgroundImage}) !important`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          opacity: 0.5, // Increased for better visibility
-          zIndex: -1, // Keep behind all content
-          filter: 'contrast(1.2) brightness(0.9) saturate(1.1)', // Enhanced contrast and saturation
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 128, 0.05)', // Very subtle blue tint
-            pointerEvents: 'none',
-          }
-        }}
-      />
+      {/* Direct background element using imported image */}
+      <div style={directBackgroundStyle}></div>
       
       {/* Content container that keeps content above background */}
       <Box sx={{ 
         position: 'relative', 
         zIndex: 1,
-        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         margin: 0,
