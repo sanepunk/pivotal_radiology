@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider, createTheme, GlobalStyles } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Box } from '@mui/material';
 import lungImage from './assets/background.jpg';
@@ -108,7 +108,7 @@ const theme = createTheme({
     fontFamily: '"Lato", sans-serif',
     fontWeightBold: 700,
     fontWeightMedium: 600,
-    fontWeightRegular: 500,
+    fontWeightRegular: 700,
     h1: {
       fontSize: '26pt',
       fontWeight: 700,
@@ -135,14 +135,26 @@ const theme = createTheme({
     },
     body1: {
       fontSize: '12pt',
-      fontWeight: 500,
+      fontWeight: 700,
     },
     body2: {
       fontSize: '11pt',
-      fontWeight: 500,
+      fontWeight: 700,
     },
     button: {
-      fontWeight: 600,
+      fontWeight: 700,
+    },
+    subtitle1: {
+      fontWeight: 700,
+    },
+    subtitle2: {
+      fontWeight: 700,
+    },
+    caption: {
+      fontWeight: 700,
+    },
+    overline: {
+      fontWeight: 700,
     },
   },
 });
@@ -168,6 +180,37 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <GlobalStyles
+          styles={{
+            '*': {
+              fontWeight: 700,
+            },
+            '.MuiTypography-root': {
+              fontWeight: '700 !important',
+            },
+            '.MuiButton-root': {
+              fontWeight: '700 !important',
+            },
+            '.MuiInputBase-root, .MuiInputLabel-root, .MuiFormLabel-root, .MuiMenuItem-root, .MuiListItemText-primary, .MuiChip-label': {
+              fontWeight: '700 !important',
+            },
+            'p, span, div, h1, h2, h3, h4, h5, h6, button, a, li': {
+              fontWeight: '700 !important',
+            },
+            '.MuiAlert-message, .MuiSnackbarContent-message, .MuiTooltip-tooltip, .MuiDialog-paper, .MuiTableCell-root, .MuiAccordionSummary-content, .MuiAccordionDetails-root': {
+              fontWeight: '700 !important',
+            },
+            '.MuiTableHead-root .MuiTableCell-root, .MuiCardContent-root, .MuiCardHeader-root, .MuiCardActions-root': {
+              fontWeight: '700 !important',
+            },
+            '.MuiTabs-root, .MuiTab-root, .MuiStepLabel-label, .MuiBreadcrumbs-root, .MuiTimeline-root': {
+              fontWeight: '700 !important',
+            },
+            '.MuiOutlinedInput-input, .MuiFilledInput-input, .MuiInput-input': {
+              fontWeight: '700 !important',
+            }
+          }}
+        />
         <Box sx={{ 
           margin: 0, 
           padding: 0, 

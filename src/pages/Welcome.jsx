@@ -123,7 +123,7 @@ function Welcome() {
             align="center"
             sx={{fontSize: '26px', fontWeight: 'bold', mb: 4}}
           >
-            TB Screening System
+            {/* TB Screening System */}
           </Typography>
 
           <Box

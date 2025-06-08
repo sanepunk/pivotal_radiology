@@ -270,7 +270,7 @@ function ImageUpload() {
               {patientData ? 'Click to upload or drag and drop' : 'Please select a patient first'}
             </Typography>
             <Typography color="textSecondary">
-              {isDicom ? 'DICOM format only' : 'Supported formats: DICOM, PNG, JPEG'}
+              {isDicom ? ' ' : ' '}
             </Typography>
           </Box>
 
