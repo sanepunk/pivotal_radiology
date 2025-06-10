@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -8,17 +8,14 @@ import {
   TextField,
   Typography,
   Container,
+  Paper,
   Alert,
   Tab,
   Tabs,
   MenuItem,
 } from '@mui/material';
 import { authAPI } from '../services/api';
-import BackgroundWrapper from '../components/BackgroundWrapper';
-import MedicalPaper from '../components/MedicalPaper';
-import BackgroundImage from '../assets/background.jpg';
 
-// Define validation schemas for login and registration
 const loginValidationSchema = Yup.object({
   email: Yup.string()
     .email('Invalid email address')
@@ -48,9 +45,7 @@ const registerValidationSchema = Yup.object({
 
 function SignIn() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const defaultTab = location.state?.defaultTab || 'login';
-  const [mode, setMode] = useState(defaultTab);
+  const [mode, setMode] = useState('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -59,39 +54,18 @@ function SignIn() {
     setError('');
     try {
       const response = await authAPI.login({
-        email: values.email || '',
-        password: values.password || '',
+        email: values.email,
+        password: values.password,
       });
-      
-      if (response && response.data) {
-        console.log('Login response:', response.data);
-        const { access_token, token_type } = response.data;
-        const fullToken = `${token_type} ${access_token}`;
-        localStorage.setItem('token', fullToken);
-        navigate('/welcome');
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      console.log('Login response:', response.data);
+      const { access_token, token_type } = response.data;
+      const fullToken = `${token_type} ${access_token}`;
+      console.log('Storing token:', fullToken);
+      localStorage.setItem('token', fullToken);
+      navigate('/welcome');
     } catch (err) {
       console.error('Login error:', err);
-      let errorMessage = 'Failed to login. Please check your credentials.';
-      
-      // Handle validation errors from FastAPI
-      if (err.response?.status === 422 && err.response?.data?.detail) {
-        // FastAPI validation errors are usually in the detail field
-        if (Array.isArray(err.response.data.detail)) {
-          // Format validation errors
-          errorMessage = err.response.data.detail
-            .map(err => `${err.loc.join('.')} - ${err.msg}`)
-            .join(', ');
-        } else {
-          errorMessage = err.response.data.detail;
-        }
-      } else if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
-      }
-      
-      setError(errorMessage);
+      setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
       setSubmitting(false);
@@ -102,237 +76,226 @@ function SignIn() {
     setLoading(true);
     setError('');
     try {
-      const response = await authAPI.register({
-        name: values.name || '',
-        email: values.email || '',
-        role: values.role || 'doctor',
-        password: values.password || '',
-        confirmPassword: values.confirmPassword || '',
+      await authAPI.register({
+        name: values.name,
+        email: values.email,
+        role: values.role,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
       });
-      
-      // Navigate to success page with credentials
-      navigate('/doctor-register-success', {
-        state: {
-          name: values.name || '',
-          email: values.email || '',
-          password: values.password || '',
-          role: values.role || 'doctor'
-        }
-      });
+      setMode('login');
+      setError('Registration successful! Please login.');
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to register. Please try again.');
+    } finally {
       setLoading(false);
       setSubmitting(false);
     }
   };
 
   return (
-    <BackgroundWrapper>
-      <Container component="main" maxWidth="lg">
-        <MedicalPaper
-          elevation={3}
-          sx={{
-            maxWidth: 'sm',
-            mx: 'auto',
+    <Container component="main" maxWidth="sm">
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          mt: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Typography component="h1" variant="h4" color="primary" gutterBottom>
+          TB Screening Portal
+        </Typography>
+
+        <Tabs
+          value={mode}
+          onChange={(_, newValue) => {
+            setMode(newValue);
+            setError('');
           }}
+          sx={{ mb: 3 }}
         >
-          <Typography 
-            component="h1" 
-            variant="h1" 
-            color="primary" 
-            gutterBottom
-          >
-            TB Screening System
-          </Typography>
+          <Tab label="Login" value="login" />
+          <Tab label="Register" value="register" />
+        </Tabs>
 
-          <Tabs
-            value={mode}
-            onChange={(_, newValue) => {
-              setMode(newValue);
-              setError('');
+        {error && (
+          <Alert 
+            severity={error.includes('successful') ? 'success' : 'error'} 
+            sx={{ width: '100%', mb: 2 }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {mode === 'login' ? (
+          <Formik
+            initialValues={{
+              email: '',
+              password: '',
             }}
-            sx={{ mb: 3 }}
+            validationSchema={loginValidationSchema}
+            onSubmit={handleLogin}
           >
-            <Tab label="Login" value="login" />
-            <Tab label="Register" value="register" />
-          </Tabs>
+            {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
+              <Form style={{ width: '100%' }}>
+                <Box sx={{ mt: 1 }}>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
+                    autoFocus
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
+                  />
 
-          {error && (
-            <Alert 
-              severity={error.includes('successful') ? 'success' : 'error'} 
-              sx={{ width: '100%', mb: 2 }}
-            >
-              {error}
-            </Alert>
-          )}
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="password"
+                    label="Password"
+                    type="password"
+                    id="password"
+                    autoComplete="current-password"
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.password && Boolean(errors.password)}
+                    helperText={touched.password && errors.password}
+                  />
 
-          {mode === 'login' ? (
-            <Formik
-              initialValues={{
-                email: '',
-                password: '',
-              }}
-              validationSchema={loginValidationSchema}
-              onSubmit={handleLogin}
-            >
-              {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
-                <Form style={{ width: '100%' }}>
-                  <Box sx={{ mt: 1 }}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="email"
-                      label="Email Address"
-                      name="email"
-                      autoComplete="email"
-                      autoFocus
-                      value={values.email || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.email && Boolean(errors.email)}
-                      helperText={touched.email && errors.email}
-                    />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={isSubmitting || loading}
+                  >
+                    {loading ? 'Logging in...' : 'Login'}
+                  </Button>
+                </Box>
+              </Form>
+            )}
+          </Formik>
+        ) : (
+          <Formik
+            initialValues={{
+              name: '',
+              email: '',
+              role: 'doctor',
+              password: '',
+              confirmPassword: '',
+            }}
+            validationSchema={registerValidationSchema}
+            onSubmit={handleRegister}
+          >
+            {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
+              <Form style={{ width: '100%' }}>
+                <Box sx={{ mt: 1 }}>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="name"
+                    label="Full Name"
+                    name="name"
+                    autoFocus
+                    value={values.name}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.name && Boolean(errors.name)}
+                    helperText={touched.name && errors.name}
+                  />
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      name="password"
-                      label="Password"
-                      type="password"
-                      id="password"
-                      autoComplete="current-password"
-                      value={values.password || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.password && Boolean(errors.password)}
-                      helperText={touched.password && errors.password}
-                    />
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
+                  />
 
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{ mt: 3, mb: 2 }}
-                      disabled={isSubmitting || loading}
-                    >
-                      {loading ? 'Logging in...' : 'Login'}
-                    </Button>
-                  </Box>
-                </Form>
-              )}
-            </Formik>
-          ) : (
-            <Formik
-              initialValues={{
-                name: '',
-                email: '',
-                role: 'doctor',
-                password: '',
-                confirmPassword: '',
-              }}
-              validationSchema={registerValidationSchema}
-              onSubmit={handleRegister}
-            >
-              {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
-                <Form style={{ width: '100%' }}>
-                  <Box sx={{ mt: 1 }}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="name"
-                      label="Full Name"
-                      name="name"
-                      autoFocus
-                      value={values.name || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.name && Boolean(errors.name)}
-                      helperText={touched.name && errors.name}
-                    />
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    select
+                    id="role"
+                    label="Role"
+                    name="role"
+                    value={values.role}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.role && Boolean(errors.role)}
+                    helperText={touched.role && errors.role}
+                  >
+                    <MenuItem value="doctor">Doctor</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                  </TextField>
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="email"
-                      label="Email Address"
-                      name="email"
-                      autoComplete="email"
-                      value={values.email || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.email && Boolean(errors.email)}
-                      helperText={touched.email && errors.email}
-                    />
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="password"
+                    label="Password"
+                    type="password"
+                    id="password"
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.password && Boolean(errors.password)}
+                    helperText={touched.password && errors.password}
+                  />
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      select
-                      id="role"
-                      label="Role"
-                      name="role"
-                      value={values.role || 'doctor'}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.role && Boolean(errors.role)}
-                      helperText={touched.role && errors.role}
-                    >
-                      <MenuItem value="doctor">Doctor</MenuItem>
-                      <MenuItem value="admin">Admin</MenuItem>
-                    </TextField>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    name="confirmPassword"
+                    label="Confirm Password"
+                    type="password"
+                    id="confirmPassword"
+                    value={values.confirmPassword}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.confirmPassword && Boolean(errors.confirmPassword)}
+                    helperText={touched.confirmPassword && errors.confirmPassword}
+                  />
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      name="password"
-                      label="Password"
-                      type="password"
-                      id="password"
-                      value={values.password || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.password && Boolean(errors.password)}
-                      helperText={touched.password && errors.password}
-                    />
-
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      name="confirmPassword"
-                      label="Confirm Password"
-                      type="password"
-                      id="confirmPassword"
-                      value={values.confirmPassword || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.confirmPassword && Boolean(errors.confirmPassword)}
-                      helperText={touched.confirmPassword && errors.confirmPassword}
-                    />
-
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{ mt: 3, mb: 2 }}
-                      disabled={isSubmitting || loading}
-                    >
-                      {loading ? 'Registering...' : 'Register'}
-                    </Button>
-                  </Box>
-                </Form>
-              )}
-            </Formik>
-          )}
-        </MedicalPaper>
-      </Container>
-    </BackgroundWrapper>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={isSubmitting || loading}
+                  >
+                    {loading ? 'Registering...' : 'Register'}
+                  </Button>
+                </Box>
+              </Form>
+            )}
+          </Formik>
+        )}
+      </Paper>
+    </Container>
   );
 }
 

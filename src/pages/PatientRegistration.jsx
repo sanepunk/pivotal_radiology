@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
   Container,
+  Paper,
   Alert,
   MenuItem,
 } from '@mui/material';
@@ -16,9 +17,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
-import Layout from '../components/Layout';
-import BackgroundWrapper from '../components/BackgroundWrapper';
-import MedicalPaper from '../components/MedicalPaper';
 
 const validationSchema = Yup.object({
   name: Yup.string().required('Full name is required'),
@@ -49,217 +47,198 @@ function PatientRegistration() {
     setLoading(true);
     setError('');
     try {
-      // Format date only if it exists
-      const formattedDate = values.date_of_birth ? format(values.date_of_birth, 'yyyy-MM-dd') : '';
-      
       const response = await patientAPI.createPatient({
         ...values,
-        name: values.name || '',
-        gender: values.gender || '',
-        date_of_birth: formattedDate,
-        contact: {
-          phone: values.contact?.phone || '',
-          email: values.contact?.email || ''
-        },
-        address: values.address || '',
-        medical_history: values.medical_history || ''
+        date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
       });
       
-      // Navigate to success page with patient data
-      navigate('/patient-register-success', { 
+      // After successful registration, navigate to welcome page
+      navigate('/welcome', { 
         state: { 
-          patientData: {
-            ...values,
-            uid: response.data.uid,
-            name: values.name || '',
-            gender: values.gender || '',
-            date_of_birth: formattedDate,
-            contact: {
-              phone: values.contact?.phone || '',
-              email: values.contact?.email || ''
-            },
-            address: values.address || '',
-            medical_history: values.medical_history || ''
-          }
+          message: 'Patient registered successfully',
+          patientId: response.data.uid 
         }
       });
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to register patient. Please try again.');
+    } finally {
       setLoading(false);
       setSubmitting(false);
     }
   };
 
   return (
-    <Layout>
-      <BackgroundWrapper>
-        <Container component="main" maxWidth="lg">
-          <MedicalPaper
-            elevation={3}
-            sx={{
-              maxWidth: 'md',
-              mx: 'auto',
-            }}
-          >
-            <Typography component="h1" variant="h4" color="primary" gutterBottom>
-              Register New Patient
-            </Typography>
+    <Container component="main" maxWidth="md">
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          mt: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Typography component="h1" variant="h4" color="primary" gutterBottom>
+          Register New Patient
+        </Typography>
 
-            {error && (
-              <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+        {error && (
+          <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-            <Formik
-              initialValues={{
-                name: '',
-                date_of_birth: null,
-                gender: '',
-                contact: {
-                  phone: '',
-                  email: ''
-                },
-                address: '',
-                medical_history: '',
-              }}
-              validationSchema={validationSchema}
-              onSubmit={handleSubmit}
-            >
-              {({ values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
-                <Form style={{ width: '100%' }}>
-                  <Box sx={{ mt: 1 }}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="name"
-                      label="Full Name"
-                      name="name"
-                      autoFocus
-                      value={values.name || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.name && Boolean(errors.name)}
-                      helperText={touched.name && errors.name}
-                    />
+        <Formik
+          initialValues={{
+            name: '',
+            date_of_birth: null,
+            gender: '',
+            contact: {
+              phone: '',
+              email: ''
+            },
+            address: '',
+            medical_history: '',
+          }}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ values, errors, touched, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
+            <Form style={{ width: '100%' }}>
+              <Box sx={{ mt: 1 }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Full Name"
+                  name="name"
+                  autoFocus
+                  value={values.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.name && Boolean(errors.name)}
+                  helperText={touched.name && errors.name}
+                />
 
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker
-                          label="Date of Birth"
-                          value={values.date_of_birth}
-                          onChange={(date) => setFieldValue('date_of_birth', date)}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              required
-                              fullWidth
-                              margin="normal"
-                              error={touched.date_of_birth && Boolean(errors.date_of_birth)}
-                              helperText={touched.date_of_birth && errors.date_of_birth}
-                            />
-                          )}
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                      label="Date of Birth"
+                      value={values.date_of_birth}
+                      onChange={(date) => setFieldValue('date_of_birth', date)}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          required
+                          fullWidth
+                          margin="normal"
+                          error={touched.date_of_birth && Boolean(errors.date_of_birth)}
+                          helperText={touched.date_of_birth && errors.date_of_birth}
                         />
-                      </LocalizationProvider>
-
-                      <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        select
-                        id="gender"
-                        label="Gender"
-                        name="gender"
-                        value={values.gender || ''}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.gender && Boolean(errors.gender)}
-                        helperText={touched.gender && errors.gender}
-                      >
-                        <MenuItem value="male">Male</MenuItem>
-                        <MenuItem value="female">Female</MenuItem>
-                        <MenuItem value="other">Other</MenuItem>
-                      </TextField>
-                    </Box>
-
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="contact.phone"
-                      label="Phone Number"
-                      name="contact.phone"
-                      value={(values.contact && values.contact.phone) || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.contact?.phone && Boolean(errors.contact?.phone)}
-                      helperText={touched.contact?.phone && errors.contact?.phone}
+                      )}
                     />
+                  </LocalizationProvider>
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="contact.email"
-                      label="Email Address"
-                      name="contact.email"
-                      autoComplete="email"
-                      value={(values.contact && values.contact.email) || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.contact?.email && Boolean(errors.contact?.email)}
-                      helperText={touched.contact?.email && errors.contact?.email}
-                    />
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    select
+                    id="gender"
+                    label="Gender"
+                    name="gender"
+                    value={values.gender}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.gender && Boolean(errors.gender)}
+                    helperText={touched.gender && errors.gender}
+                  >
+                    <MenuItem value="male">Male</MenuItem>
+                    <MenuItem value="female">Female</MenuItem>
+                    <MenuItem value="other">Other</MenuItem>
+                  </TextField>
+                </Box>
 
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="address"
-                      label="Address"
-                      name="address"
-                      multiline
-                      rows={2}
-                      value={values.address || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.address && Boolean(errors.address)}
-                      helperText={touched.address && errors.address}
-                    />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="contact.phone"
+                    label="Phone Number"
+                    name="contact.phone"
+                    placeholder="+1234567890"
+                    value={values.contact.phone}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.contact?.phone && Boolean(errors.contact?.phone)}
+                    helperText={touched.contact?.phone && errors.contact?.phone}
+                  />
 
-                    <TextField
-                      margin="normal"
-                      fullWidth
-                      id="medical_history"
-                      label="Medical History"
-                      name="medical_history"
-                      multiline
-                      rows={4}
-                      value={values.medical_history || ''}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      error={touched.medical_history && Boolean(errors.medical_history)}
-                      helperText={touched.medical_history && errors.medical_history}
-                    />
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="contact.email"
+                    label="Email"
+                    name="contact.email"
+                    type="email"
+                    value={values.contact.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.contact?.email && Boolean(errors.contact?.email)}
+                    helperText={touched.contact?.email && errors.contact?.email}
+                  />
+                </Box>
 
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{ mt: 3, mb: 2 }}
-                      disabled={isSubmitting || loading}
-                    >
-                      {loading ? 'Registering...' : 'Register'}
-                    </Button>
-                  </Box>
-                </Form>
-              )}
-            </Formik>
-          </MedicalPaper>
-        </Container>
-      </BackgroundWrapper>
-    </Layout>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="address"
+                  label="Address"
+                  name="address"
+                  multiline
+                  rows={2}
+                  value={values.address}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.address && Boolean(errors.address)}
+                  helperText={touched.address && errors.address}
+                />
+
+                <TextField
+                  margin="normal"
+                  fullWidth
+                  id="medical_history"
+                  label="Medical History"
+                  name="medical_history"
+                  multiline
+                  rows={4}
+                  value={values.medical_history}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.medical_history && Boolean(errors.medical_history)}
+                  helperText={touched.medical_history && errors.medical_history}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={isSubmitting || loading}
+                >
+                  {loading ? 'Registering...' : 'Register Patient'}
+                </Button>
+              </Box>
+            </Form>
+          )}
+        </Formik>
+      </Paper>
+    </Container>
   );
 }
 

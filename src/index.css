@@ -1,65 +1,25 @@
-/* Import Lato font from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700;900&display=swap');
-
 :root {
-  font-family: 'Lato', sans-serif;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  font-weight: 700;
+  font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Fallback body background for maximum reliability */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('./assets/background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.5;
-  z-index: -10;
-  pointer-events: none;
-}
-
-html, body {
+body {
   margin: 0;
-  padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden;
-  font-weight: 700;
-}
-
-/* Remove default spacing from all MUI containers */
-.MuiContainer-root {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-/* Remove margin from AppBar */
-.MuiAppBar-root {
-  margin: 0;
-}
-
-/* No margin for footer */
-footer {
-  margin-bottom: 0 !important;
 }
 
 * {
   box-sizing: border-box;
-  font-weight: 700;
 }
 
 a {
-  font-weight: 700;
+  font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
@@ -70,7 +30,6 @@ a:hover {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
-  font-weight: 700;
 }
 
 button {
@@ -78,7 +37,7 @@ button {
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
-  font-weight: 700;
+  font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
@@ -90,21 +49,6 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
-}
-
-/* Ensure all MUI Typography elements are bold */
-.MuiTypography-root {
-  font-weight: 700 !important;
-}
-
-/* Ensure all form inputs and labels are bold */
-.MuiInputBase-root, .MuiInputLabel-root, .MuiFormLabel-root {
-  font-weight: 700 !important;
-}
-
-/* Ensure all buttons have bold text */
-.MuiButton-root {
-  font-weight: 700 !important;
 }
 
 @media (prefers-color-scheme: light) {

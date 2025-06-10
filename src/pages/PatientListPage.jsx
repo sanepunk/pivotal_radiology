@@ -3,11 +3,10 @@ import {
   Container,
   Typography,
   Alert,
+  Paper,
 } from '@mui/material';
 import Layout from '../components/Layout';
 import PatientList from '../components/PatientList';
-import BackgroundImage from '../components/BackgroundImage';
-import MedicalPaper from '../components/MedicalPaper';
 
 function PatientListPage() {
   const location = useLocation();
@@ -15,13 +14,12 @@ function PatientListPage() {
 
   return (
     <Layout>
-      <BackgroundImage />
       <Container maxWidth="lg">
-        <MedicalPaper elevation={3}>
+        <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
           {message && (
             <Alert 
               severity="info" 
-              sx={{ mb: 3, width: '100%' }}
+              sx={{ mb: 3 }}
               onClose={() => {
                 window.history.replaceState({}, document.title);
               }}
@@ -31,7 +29,7 @@ function PatientListPage() {
           )}
           
           <PatientList />
-        </MedicalPaper>
+        </Paper>
       </Container>
     </Layout>
   );
