@@ -33,17 +33,11 @@ api.interceptors.response.use(
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       console.error('Response Error:', error.response.data);
-      
-      // Don't automatically redirect on auth errors for login/register endpoints
-      const isAuthEndpoint = error.config.url && 
-        (error.config.url.includes('/auth/login') || 
-         error.config.url.includes('/auth/register'));
-         
-      if (error.response.status === 401 && !isAuthEndpoint) {
+      if (error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/app/auth'; // Using auth route without trailing slash
+        window.location.href = '/login';
       }
       return Promise.reject(error);
     } else if (error.request) {
@@ -70,26 +64,8 @@ api.interceptors.request.use((config) => {
 // Auth endpoints
 export const authAPI = {
   login: async (credentials) => {
-    try {
-      // FastAPI OAuth2 password flow expects x-www-form-urlencoded data
-      const params = new URLSearchParams();
-      params.append('username', credentials.email); // Use email as username
-      params.append('password', credentials.password);
-      
-      // Make sure we're using the correct content type for OAuth2 form data
-      return await api.post('/auth/login', params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        }
-      });
-    } catch (error) {
-      console.error('Login error:', error);
-      // Show more details about the validation error
-      if (error.response && error.response.status === 422) {
-        console.error('Validation error details:', error.response.data);
-      }
-      throw error;
-    }
+    const response = await api.post('/auth/login', credentials);
+    return response;
   },
   register: (userData) => api.post('/auth/register', userData),
   verifyToken: () => api.get('/auth/verify'),
