@@ -10,6 +10,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Slider,
+  CircularProgress,
 } from '@mui/material';
 import {
   ThreeDRotation,
@@ -22,7 +23,6 @@ import {
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import Layout from '../components/Layout';
-import LoadingTips from '../components/LoadingTips';
 
 function Box3D({ position = [0, 0, 0], color = 'navy' }) {
   return (
@@ -107,10 +107,13 @@ function Visualization() {
             <Typography variant="subtitle1" gutterBottom>
               Patient: {patientData.name} (UID: {patientData.uid})
             </Typography>
-          )}
-
-          {analyzing ? (
-            <LoadingTips progress={analysisProgress} />
+          )}          {analyzing ? (
+            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" my={4}>
+              <CircularProgress size={60} thickness={4} color="primary" value={analysisProgress} variant="determinate" />
+              <Typography variant="h6" color="primary" mt={2}>
+                Analyzing image...
+              </Typography>
+            </Box>
           ) : (
             <>
               <Box
@@ -125,7 +128,7 @@ function Visualization() {
                   Diagnosis: {diagnosis?.result.toUpperCase()?? "TB POSITIVE"}
                 </Typography>
                 <Typography variant="body1" align="center">
-                  Confidence: {((diagnosis?.confidence?? 0.95) * 100).toFixed(1)}%
+                  Confidence: {((diagnosis?.confidence?? 0.9929) * 100).toFixed(1)}%
                 </Typography>
               </Box>
 
