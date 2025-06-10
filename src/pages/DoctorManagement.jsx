@@ -21,6 +21,7 @@ import { Delete, PersonAdd } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import { authAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import DoctorRegistrationDialog from '../components/DoctorRegistrationDialog';
 
 function DoctorManagement() {
   const [doctors, setDoctors] = useState([]);
@@ -28,6 +29,7 @@ function DoctorManagement() {
   const [error, setError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,7 +85,7 @@ function DoctorManagement() {
               variant="contained"
               color="primary"
               startIcon={<PersonAdd />}
-              onClick={() => navigate('/register')}
+              onClick={() => setRegistrationDialogOpen(true)}
             >
               Add New Doctor
             </Button>
@@ -95,7 +97,7 @@ function DoctorManagement() {
                 <TableRow>
                   <TableCell>Name</TableCell>
                   <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
+                  <TableCell>Designation</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -131,6 +133,14 @@ function DoctorManagement() {
               </Button>
             </DialogActions>
           </Dialog>
+
+          <DoctorRegistrationDialog
+            open={registrationDialogOpen}
+            onClose={() => setRegistrationDialogOpen(false)}
+            onSuccess={() => {
+              fetchDoctors();
+            }}
+          />
         </Paper>
       </Container>
     </Layout>
