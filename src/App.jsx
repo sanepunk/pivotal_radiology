@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Box } from '@mui/material';
+import lungImage from './assets/background.jpg';
 
 // Pages
 import SignIn from './pages/SignIn';
@@ -16,6 +17,8 @@ import PatientRegistration from './pages/PatientRegistration';
 import PatientListPage from './pages/PatientListPage';
 import PatientDetails from './components/PatientDetails';
 import DoctorManagement from './pages/DoctorManagement';
+import DoctorRegisterSuccess from './pages/DoctorRegisterSuccess';
+import PatientRegisterSuccess from './pages/PatientRegisterSuccess';
 
 // Layout Component
 const Layout = ({ children }) => {
@@ -76,14 +79,47 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return <Layout>{children}</Layout>;
 };
 
+// Background wrapper component
+const BackgroundWrapper = ({ children, showBackground = true }) => {
+  return (
+    <Container maxWidth={false} disableGutters sx={{ margin: 0, padding: 0 }}>
+      {showBackground && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            margin: 0,
+            padding: 0,
+            backgroundImage: `url(${lungImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.25,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      <Box sx={{ position: 'relative', zIndex: 1, margin: 0, padding: 0 }}>
+        {children}
+      </Box>
+    </Container>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
-          <Routes>
-            <Route path="/" element={<SignIn />} />
+        <BackgroundWrapper>
+          <Router>
+            <Routes>              <Route path="/" element={<SignIn />} />
+              <Route path="/doctor-register-success" element={<DoctorRegisterSuccess />} />
+              <Route path="/patient-register-success" element={<PatientRegisterSuccess />} />
             <Route
               path="/welcome"
               element={
@@ -164,9 +200,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+            <Route path="*" element={<Navigate to="/" replace />} />          </Routes>
+          </Router>
+        </BackgroundWrapper>
       </ThemeProvider>
     </QueryClientProvider>
   );

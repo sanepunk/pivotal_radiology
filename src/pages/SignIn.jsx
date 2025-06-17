@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -71,7 +71,6 @@ function SignIn() {
       setSubmitting(false);
     }
   };
-
   const handleRegister = async (values, { setSubmitting }) => {
     setLoading(true);
     setError('');
@@ -83,11 +82,17 @@ function SignIn() {
         password: values.password,
         confirmPassword: values.confirmPassword,
       });
-      setMode('login');
-      setError('Registration successful! Please login.');
+      
+      // Navigate to success page with the new doctor's information
+      navigate('/doctor-register-success', {
+        state: {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        }
+      });
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to register. Please try again.');
-    } finally {
       setLoading(false);
       setSubmitting(false);
     }

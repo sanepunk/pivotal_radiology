@@ -15,6 +15,7 @@ import {
   ArrowForward,
   Logout,
 } from '@mui/icons-material';
+import { authAPI } from '../services/api';
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ function Layout({ children }) {
 
   const handleLogout = () => {
     // Add logout logic here
+    authAPI.logout();
     navigate('/');
   };
 

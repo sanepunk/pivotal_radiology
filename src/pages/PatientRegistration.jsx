@@ -46,17 +46,18 @@ function PatientRegistration() {
   const handleSubmit = async (values, { setSubmitting }) => {
     setLoading(true);
     setError('');
-    try {
-      const response = await patientAPI.createPatient({
+    try {      const response = await patientAPI.createPatient({
         ...values,
         date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
       });
       
-      // After successful registration, navigate to welcome page
-      navigate('/welcome', { 
+      // After successful registration, navigate to success page with patient data
+      navigate('/patient-register-success', { 
         state: { 
-          message: 'Patient registered successfully',
-          patientId: response.data.uid 
+          patientData: {
+            ...response.data,
+            date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd')
+          }
         }
       });
     } catch (err) {

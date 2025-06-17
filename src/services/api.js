@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://pivotal-radiology-backend.onrender.com'; // FastAPI backend URL
+const API_BASE_URL = 'http://localhost:8000';//'https://pivotal-radiology-backend.onrender.com'; // FastAPI backend URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,

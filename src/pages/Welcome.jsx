@@ -68,12 +68,12 @@ function Welcome() {
       icon: <CloudUpload sx={{ fontSize: 40 }} />,
       action: () => navigate('/upload'),
     },
-    {
-      title: 'Reports',
-      description: 'Generate and view TB screening reports',
-      icon: <Assessment sx={{ fontSize: 40 }} />,
-      action: () => navigate('/report'),
-    },
+    // {
+    //   title: 'Reports',
+    //   description: 'Generate and view TB screening reports',
+    //   icon: <Assessment sx={{ fontSize: 40 }} />,
+    //   action: () => navigate('/report'),
+    // },
     ...(userData?.role === 'admin' ? [{
       title: 'Doctor Management',
       description: 'Manage doctors and their accounts',

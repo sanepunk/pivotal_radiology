@@ -50,6 +50,22 @@ const tips = [
     type: 'Quote',
     text: '"Every step towards TB awareness is a step towards prevention."',
   },
+  {
+    type: 'Remedy',
+    text: 'Consult a healthcare provider if you have been in contact with someone diagnosed with TB.',
+  },
+  {
+    type: 'Prevention',
+    text: 'Vaccination with BCG can provide some protection against severe forms of TB in children.',
+  },
+  {
+    type: 'Fact',
+    text: 'Tuberculosis is caused by the bacterium Mycobacterium tuberculosis.',
+  },
+  {
+    type: 'Quote',
+    text: '"Knowledge is power in the fight against tuberculosis."',
+  }
 ];
 
 function LoadingTips({ progress = 0 }) {
