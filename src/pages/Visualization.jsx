@@ -36,16 +36,23 @@ function Box3D({ position = [0, 0, 0], color = 'navy' }) {
 function Visualization() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { patientData, imageData, diagnosis } = location.state || {};
-
-  const [viewMode, setViewMode] = useState('original'); // 'original', 'segmentation', '3d'
+  const { patientData, imageData } = location.state || {};
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [diagnosis, setDiagnosis] = useState(null);
+  const [viewMode, setViewMode] = useState('normal');
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [showLeftLobe, setShowLeftLobe] = useState(true);
-  const [showRightLobe, setShowRightLobe] = useState(true);
   const [thermalView, setThermalView] = useState(false);
-  const [analyzing, setAnalyzing] = useState(true);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
+
+  useEffect(() => {
+    if (imageData?.tb_prediction) {
+      setDiagnosis({
+        result: imageData.tb_prediction.result.toLowerCase().replace('tb ', ''),
+        confidence: imageData.tb_prediction.confidence
+      });
+    }
+  }, [imageData]);
 
   useEffect(() => {
     // Simulate analysis progress
@@ -107,7 +114,9 @@ function Visualization() {
             <Typography variant="subtitle1" gutterBottom>
               Patient: {patientData.name} (UID: {patientData.uid})
             </Typography>
-          )}          {analyzing ? (
+          )}
+
+          {analyzing ? (
             <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" my={4}>
               <CircularProgress size={60} thickness={4} color="primary" value={analysisProgress} variant="determinate" />
               <Typography variant="h6" color="primary" mt={2}>
@@ -120,15 +129,15 @@ function Visualization() {
                 sx={{
                   mt: 3,
                   p: 2,
-                  bgcolor: diagnosis?.result === 'malignant' ? '#ffebee' : '#e8f5e9',
+                  bgcolor: diagnosis?.result === 'positive' ? '#ffebee' : '#e8f5e9',
                   borderRadius: 1,
                 }}
               >
                 <Typography variant="h5" align="center" gutterBottom>
-                  Diagnosis: {diagnosis?.result.toUpperCase()?? "TB POSITIVE"}
+                  Diagnosis: {diagnosis?.result.toUpperCase() || "TB POSITIVE"}
                 </Typography>
                 <Typography variant="body1" align="center">
-                  Confidence: {((diagnosis?.confidence?? 0.9929) * 100).toFixed(1)}%
+                  Confidence: {((diagnosis?.confidence || 0.9929) * 100).toFixed(1)}%
                 </Typography>
               </Box>
 
@@ -148,8 +157,6 @@ function Visualization() {
                       <Canvas camera={{ position: [0, 0, 5] }}>
                         <ambientLight intensity={0.5} />
                         <pointLight position={[10, 10, 10]} />
-                        {showLeftLobe && <Box3D position={[-1, 0, 0]} />}
-                        {showRightLobe && <Box3D position={[1, 0, 0]} />}
                         <OrbitControls />
                       </Canvas>
                     ) : (
@@ -220,32 +227,6 @@ function Visualization() {
                         </Grid>
                       </Grid>
                     </Box>
-
-                    {viewMode === '3d' && (
-                      <>
-                        <Box sx={{ mb: 2 }}>
-                          <Button
-                            variant={showLeftLobe ? 'contained' : 'outlined'}
-                            startIcon={showLeftLobe ? <Visibility /> : <VisibilityOff />}
-                            onClick={() => setShowLeftLobe(!showLeftLobe)}
-                            fullWidth
-                          >
-                            Left Lobe
-                          </Button>
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                          <Button
-                            variant={showRightLobe ? 'contained' : 'outlined'}
-                            startIcon={showRightLobe ? <Visibility /> : <VisibilityOff />}
-                            onClick={() => setShowRightLobe(!showRightLobe)}
-                            fullWidth
-                          >
-                            Right Lobe
-                          </Button>
-                        </Box>
-                      </>
-                    )}
 
                     <Box sx={{ mb: 3 }}>
                       <Button

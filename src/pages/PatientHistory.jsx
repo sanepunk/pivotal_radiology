@@ -17,6 +17,7 @@ import {
   IconButton,
   Dialog,
   DialogContent,
+  Chip,
 } from '@mui/material';
 import { format } from 'date-fns';
 import { ZoomIn, Close } from '@mui/icons-material';
@@ -32,6 +33,18 @@ function PatientHistory() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
 
+  const extractTBPrediction = (notes) => {
+    if (!notes) return null;
+    const match = notes.match(/\[TB Prediction: (.*?) \((\d+\.\d+)%\)\]/);
+    if (match) {
+      return {
+        result: match[1],
+        confidence: parseFloat(match[2])
+      };
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchPatientData = async () => {
       try {
@@ -41,11 +54,7 @@ function PatientHistory() {
         ]);
         
         setPatient(patientResponse.data);
-        const sortedFiles = filesResponse.data || [];
-      sortedFiles.sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date));
-      
-        setFiles(sortedFiles);
-        // setFiles(filesResponse.data || []);
+        setFiles(filesResponse.data || []);
       } catch (error) {
         console.error('Error fetching patient data:', error);
         setError('Error loading patient data');
@@ -68,7 +77,7 @@ function PatientHistory() {
   };
 
   const getImageUrl = (file) => {
-    return `http://localhost:8000/files/image/${file.file_name}`;
+    return `http://localhost:8000${file.file_path}`;
   };
 
   if (loading) {
@@ -154,41 +163,59 @@ function PatientHistory() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {files.map((file) => (
-                  <TableRow key={file._id}>
-                    <TableCell>
-                      {format(new Date(file.upload_date), 'dd/MM/yyyy')}
-                    </TableCell>
-                    <TableCell>{file.doctor_name}</TableCell>
-                    <TableCell>TB POSITIVE</TableCell>
-                    <TableCell>95%</TableCell>
-                    <TableCell>
-                      {file.file_type === 'xray' && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Box
-                            component="img"
-                            src={getImageUrl(file)}
-                            alt={file.file_name}
-                            sx={{
-                              width: 80,
-                              height: 80,
-                              objectFit: 'cover',
-                              cursor: 'pointer',
-                              borderRadius: 1,
-                            }}
-                            onClick={() => handleImageClick(file)}
-                          />
-                          <IconButton 
-                            onClick={() => handleImageClick(file)}
+                {[...files]
+                  .sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date))
+                  .map((file) => {
+                  const tbPrediction = extractTBPrediction(file.notes);
+                  return (
+                    <TableRow key={file.id}>
+                      <TableCell>
+                        {format(new Date(file.upload_date), 'MM/dd/yyyy')}
+                      </TableCell>
+                      <TableCell>{file.doctor_name}</TableCell>
+                      <TableCell>
+                        {tbPrediction ? (
+                          <Chip
+                            label={tbPrediction.result}
+                            color={tbPrediction.result === 'TB Positive' ? 'error' : 'success'}
+                            variant="outlined"
                             size="small"
-                          >
-                            <ZoomIn />
-                          </IconButton>
-                        </Box>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          />
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {tbPrediction ? `${tbPrediction.confidence.toFixed(1)}%` : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {file.file_type === 'xray' && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              component="img"
+                              src={getImageUrl(file)}
+                              alt={file.file_name}
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                objectFit: 'cover',
+                                cursor: 'pointer',
+                                borderRadius: 1,
+                              }}
+                              onClick={() => handleImageClick(file)}
+                            />
+                            <IconButton 
+                              onClick={() => handleImageClick(file)}
+                              size="small"
+                            >
+                              <ZoomIn />
+                            </IconButton>
+                          </Box>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {files.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} align="center">

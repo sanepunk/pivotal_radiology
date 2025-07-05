@@ -20,6 +20,7 @@ import {
   TableCell,
   Alert,
   CircularProgress,
+  Chip,
 } from '@mui/material';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -39,6 +40,9 @@ function Report() {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [error, setError] = useState('');
+
+  // Extract TB prediction from imageData if available
+  const tbPrediction = imageData?.tb_prediction || null;
 
   const handleGeneratePDF = () => {
     setShowPasswordDialog(true);
@@ -331,6 +335,38 @@ function Report() {
             </Grid>
           </Paper>
 
+          {/* TB Prediction Section */}
+          {tbPrediction && (
+            <Box sx={{ mb: 4 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  color: '#000080',
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '1px solid #000080',
+                  mb: 2
+                }}
+              >
+                TB Analysis Results
+              </Typography>
+              <Box sx={{ pl: 2 }}>
+                <Typography variant="body1" gutterBottom>
+                  <strong>Prediction:</strong>{' '}
+                  <Chip
+                    label={tbPrediction.result}
+                    color={tbPrediction.result === 'TB Positive' ? 'error' : 'success'}
+                    variant="outlined"
+                    size="small"
+                  />
+                </Typography>
+                {/* <Typography variant="body1" gutterBottom>
+                  <strong>Confidence:</strong> {tbPrediction.confidence.toFixed(1)}%
+                </Typography> */}
+              </Box>
+            </Box>
+          )}
+
           {/* TB Confidence Score */}
           <Box sx={{ mb: 4, pl: 2 }}>
             <Typography variant="h6" color="primary" gutterBottom>
@@ -355,7 +391,7 @@ function Report() {
                 </Box>
               </Box>
               <Typography variant="h6" color="primary">
-                {tbConfidence}%
+                {tbPrediction.confidence  *100}%
               </Typography>
             </Box>
           </Box>          {generatingPDF ? (

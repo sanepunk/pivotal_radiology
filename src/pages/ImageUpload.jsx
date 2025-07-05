@@ -11,9 +11,9 @@ import {
   TextField,
   CircularProgress,
   Autocomplete,
+  RadioGroup,
   FormControlLabel,
   Radio,
-  RadioGroup,
   FormControl,
   FormLabel,
 } from '@mui/material';
@@ -33,15 +33,16 @@ function ImageUpload() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
-  const [searchText, setSearchText] = useState('');  const [notes, setNotes] = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [notes, setNotes] = useState('');
   const [doctorName, setDoctorName] = useState('');
-  const [fileType, setFileType] = useState('dicom'); // Default to DICOM
+  const [fileType, setFileType] = useState('dicom');
 
   useEffect(() => {
     // Fetch all patients when component mounts
     fetchPatients();
   }, []);
-  
+
   const fetchPatients = async () => {
     try {
       const response = await patientAPI.getPatients();
@@ -61,6 +62,14 @@ function ImageUpload() {
       setPatientData(null);
     }
   };
+
+  const handleFileTypeChange = (event) => {
+    setFileType(event.target.value);
+    // Clear selected file when changing file type
+    setSelectedFile(null);
+    setPreview('');
+  };
+
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -94,13 +103,6 @@ function ImageUpload() {
     }
   };
 
-  const handleFileTypeChange = (event) => {
-    setFileType(event.target.value);
-    // Clear selected file when changing file type
-    setSelectedFile(null);
-    setPreview('');
-  };
-
   const handleUpload = async () => {
     if (!selectedFile) {
       setError('Please select a file to upload');
@@ -120,7 +122,8 @@ function ImageUpload() {
     setUploading(true);
     setProgress(0);
 
-    try {      const formData = new FormData();
+    try {
+      const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('patientUid', patientData.uid);
       formData.append('doctor_name', doctorName);
@@ -192,19 +195,16 @@ function ImageUpload() {
                     error={Boolean(error && error.includes('patient'))}
                   />
                 )}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <Box component="li" {...otherProps} key={option.uid}>
-                      <Box>
-                        <Typography variant="body1">{option.name}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          ID: {option.uid}
-                        </Typography>
-                      </Box>
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Box>
+                      <Typography variant="body1">{option.name}</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        ID: {option.uid}
+                      </Typography>
                     </Box>
-                  );
-                }}
+                  </Box>
+                )}
                 loading={loading}
                 loadingText="Loading patients..."
                 noOptionsText="No patients found"
@@ -216,7 +216,9 @@ function ImageUpload() {
             <Alert severity="success" sx={{ mb: 3 }}>
               Patient selected: {patientData.name} (ID: {patientData.uid})
             </Alert>
-          )}          <TextField
+          )}
+
+          <TextField
             fullWidth
             required
             label="Doctor Name"
@@ -228,7 +230,7 @@ function ImageUpload() {
           />
 
           <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
-            <FormLabel component="legend">Image Type</FormLabel>
+            {/* <FormLabel component="legend">Image Type</FormLabel> */}
             <RadioGroup
               row
               name="file-type-radio"
@@ -289,7 +291,8 @@ function ImageUpload() {
             <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
               {patientData ? 'Click to upload or drag and drop' : 'Please select a patient first'}
-            </Typography>            <Typography color="textSecondary">
+            </Typography>
+            <Typography color="textSecondary">
               {fileType === 'dicom' ? 'Select a DICOM (.dcm) file' : 'Select an image (.png or .jpg) file'}
             </Typography>
           </Box>
@@ -318,7 +321,8 @@ function ImageUpload() {
                     }}
                   />
                 </Box>
-              )}              {fileType === 'dicom' && !preview && selectedFile && (
+              )}
+              {fileType === 'dicom' && !preview && selectedFile && (
                 <Alert severity="info" sx={{ mt: 2, mb: 2 }}>
                   DICOM file preview not available. The image will be converted and displayed after upload.
                 </Alert>
@@ -333,7 +337,9 @@ function ImageUpload() {
                 sx={{ mt: 2 }}
               />
             </Box>
-          )}          {uploading && (
+          )}
+
+          {uploading && (
             <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" my={4}>
               <CircularProgress size={60} thickness={4} color="primary" value={progress} variant="determinate" />
               <Typography variant="h6" color="primary" mt={2}>
@@ -358,4 +364,4 @@ function ImageUpload() {
   );
 }
 
-export default ImageUpload; 
+export default ImageUpload;

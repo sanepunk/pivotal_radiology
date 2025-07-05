@@ -93,6 +93,18 @@ const PatientHistory = ({ patientUid, history, onHistoryUpdate }) => {
     }
   };
 
+  const extractTBPrediction = (notes) => {
+    if (!notes) return null;
+    const match = notes.match(/\[TB Prediction: (.*?) \((\d+\.\d+)%\)\]/);
+    if (match) {
+      return {
+        result: match[1],
+        confidence: parseFloat(match[2])
+      };
+    }
+    return null;
+  };
+
   if (!patientUid) {
     return <Alert severity="warning">Patient UID is required to view history</Alert>;
   }
@@ -135,54 +147,74 @@ const PatientHistory = ({ patientUid, history, onHistoryUpdate }) => {
                   <TableCell>Date</TableCell>
                   <TableCell>Doctor</TableCell>
                   <TableCell>Chief Complaint</TableCell>
+                  <TableCell>TB Prediction</TableCell>
+                  <TableCell>Confidence</TableCell>
                   <TableCell>Diagnoses</TableCell>
                   <TableCell>Procedures</TableCell>
                   <TableCell>Files</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {history.map((visit) => (
-                  <TableRow key={visit.id}>
-                    <TableCell>{format(new Date(visit.visit_date), 'MM/dd/yyyy')}</TableCell>
-                    <TableCell>{visit.doctor}</TableCell>
-                    <TableCell>{visit.chief_complaint}</TableCell>
-                    <TableCell>
-                      {visit.diagnoses.map((diagnosis, idx) => (
-                        <Chip
-                          key={idx}
-                          label={diagnosis.condition}
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                          sx={{ m: 0.5 }}
-                        />
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      {visit.procedures.map((procedure, idx) => (
-                        <Chip
-                          key={idx}
-                          label={procedure.name}
-                          color="secondary"
-                          variant="outlined"
-                          size="small"
-                          sx={{ m: 0.5 }}
-                        />
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      {visit.files.map((file) => (
-                        <Button
-                          key={file.id}
-                          size="small"
-                          onClick={() => window.open(`/files/${file.id}`)}
-                        >
-                          {file.file_type}
-                        </Button>
-                      ))}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {history.map((visit) => {
+                  const tbPrediction = extractTBPrediction(visit.notes);
+                  return (
+                    <TableRow key={visit.id}>
+                      <TableCell>{format(new Date(visit.visit_date), 'MM/dd/yyyy')}</TableCell>
+                      <TableCell>{visit.doctor}</TableCell>
+                      <TableCell>{visit.chief_complaint}</TableCell>
+                      <TableCell>
+                        {tbPrediction ? (
+                          <Chip
+                            label={tbPrediction.result}
+                            color={tbPrediction.result === 'TB Positive' ? 'error' : 'success'}
+                            variant="outlined"
+                            size="small"
+                          />
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {tbPrediction ? `${tbPrediction.confidence.toFixed(1)}%` : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {visit.diagnoses.map((diagnosis, idx) => (
+                          <Chip
+                            key={idx}
+                            label={diagnosis.condition}
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            sx={{ m: 0.5 }}
+                          />
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {visit.procedures.map((procedure, idx) => (
+                          <Chip
+                            key={idx}
+                            label={procedure.name}
+                            color="secondary"
+                            variant="outlined"
+                            size="small"
+                            sx={{ m: 0.5 }}
+                          />
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {visit.files.map((file) => (
+                          <Button
+                            key={file.id}
+                            size="small"
+                            onClick={() => window.open(`/files/${file.id}`)}
+                          >
+                            {file.file_type}
+                          </Button>
+                        ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
