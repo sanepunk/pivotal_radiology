@@ -91,7 +91,26 @@ export const authAPI = {
       throw error;
     }
   },
-  register: (userData) => api.post('/auth/register', userData),
+  register: async (userData) => {
+    try {
+      // Make sure we're using the correct content type for the registration
+      const response = await api.post('/auth/register', userData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      // If registration is successful, return the response
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Show more details about the validation error
+      if (error.response && error.response.status === 422) {
+        console.error('Validation error details:', error.response.data);
+      }
+      throw error;
+    }
+  },
   verifyToken: () => api.get('/auth/verify'),
   getDoctors: () => api.get('/auth/doctors'),
   deleteDoctor: (email) => api.delete(`/auth/doctors/${email}`),
@@ -124,6 +143,15 @@ export const fileAPI = {
       onUploadProgress
     }),
   getFile: (fileId) => api.get(`/patients/files/${fileId}`),
+  renderVTI: (vtiPath) => {
+    const formData = new FormData();
+    formData.append('vti_path', vtiPath);
+    return api.post('/patients/files/render', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // Image analysis endpoints

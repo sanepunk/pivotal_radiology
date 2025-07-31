@@ -18,11 +18,12 @@ import {
   Dialog,
   DialogContent,
   Chip,
+  Button,
 } from '@mui/material';
 import { format } from 'date-fns';
-import { ZoomIn, Close } from '@mui/icons-material';
+import { ZoomIn, Close, ThreeDRotation } from '@mui/icons-material';
 import Layout from '../components/Layout';
-import { patientAPI } from '../services/api';
+import { patientAPI, fileAPI } from '../services/api';
 
 function PatientHistory() {
   const { uid } = useParams();
@@ -54,6 +55,7 @@ function PatientHistory() {
         ]);
         
         setPatient(patientResponse.data);
+        console.log(filesResponse.data)
         setFiles(filesResponse.data || []);
       } catch (error) {
         console.error('Error fetching patient data:', error);
@@ -78,6 +80,21 @@ function PatientHistory() {
 
   const getImageUrl = (file) => {
     return `http://localhost:8000${file.file_path}`;
+  };
+
+  const handle3DRendering = async (file) => {
+    try {
+      if (file.rendering_3d) {
+        console.log(file.rendering_3d)
+        await fileAPI.renderVTI(file.rendering_3d);
+        console.log('3D rendering request sent successfully');
+      } else {
+        alert('3D rendering is not available for this image');
+      }
+    } catch (error) {
+      console.error('Error sending 3D rendering request:', error);
+      alert('Failed to send 3D rendering request');
+    }
   };
 
   if (loading) {
@@ -159,13 +176,17 @@ function PatientHistory() {
                   <TableCell>Doctor</TableCell>
                   <TableCell>Diagnosis Result</TableCell>
                   <TableCell>Confidence</TableCell>
-                  <TableCell>Image</TableCell>
+                  <TableCell>Original X-ray</TableCell>
+                  <TableCell>Segmentation</TableCell>
+                  <TableCell>Heatmap</TableCell>
+                  <TableCell>3D Rendering</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {[...files]
                   .sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date))
                   .map((file) => {
+                    console.log(file)
                   const tbPrediction = extractTBPrediction(file.notes);
                   return (
                     <TableRow key={file.id}>
@@ -188,6 +209,8 @@ function PatientHistory() {
                       <TableCell>
                         {tbPrediction ? `${tbPrediction.confidence.toFixed(1)}%` : 'N/A'}
                       </TableCell>
+                      
+                      {/* Original X-ray */}
                       <TableCell>
                         {file.file_type === 'xray' && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -213,12 +236,81 @@ function PatientHistory() {
                           </Box>
                         )}
                       </TableCell>
+                      
+                      {/* Segmentation Mask */}
+                      <TableCell>
+                        {file.segmentation_mask && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              component="img"
+                              src={`http://localhost:8000${file.segmentation_mask}`}
+                              alt="Segmentation Mask"
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                objectFit: 'cover',
+                                cursor: 'pointer',
+                                borderRadius: 1,
+                              }}
+                              onClick={() => handleImageClick({...file, file_path: file.segmentation_mask, file_name: 'Segmentation Mask'})}
+                            />
+                            <IconButton 
+                              onClick={() => handleImageClick({...file, file_path: file.segmentation_mask, file_name: 'Segmentation Mask'})}
+                              size="small"
+                            >
+                              <ZoomIn />
+                            </IconButton>
+                          </Box>
+                        )}
+                      </TableCell>
+                      
+                      {/* Heatmap Overlay */}
+                      <TableCell>
+                        {tbPrediction?.result === 'TB Positive' && file.heatmap_overlay && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              component="img"
+                              src={`http://localhost:8000${file.heatmap_overlay}`}
+                              alt="Heatmap Overlay"
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                objectFit: 'cover',
+                                cursor: 'pointer',
+                                borderRadius: 1,
+                              }}
+                              onClick={() => handleImageClick({...file, file_path: file.heatmap_overlay, file_name: 'Heatmap Overlay'})}
+                            />
+                            <IconButton 
+                              onClick={() => handleImageClick({...file, file_path: file.heatmap_overlay, file_name: 'Heatmap Overlay'})}
+                              size="small"
+                            >
+                              <ZoomIn />
+                            </IconButton>
+                          </Box>
+                        )}
+                      </TableCell>
+                      
+                      {/* 3D Rendering Button */}
+                      <TableCell>
+                        {tbPrediction?.result === 'TB Positive' && file.rendering_3d && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<ThreeDRotation />}
+                            onClick={() => handle3DRendering(file)}
+                            sx={{ whiteSpace: 'nowrap' }}
+                          >
+                            3D View
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
                 {files.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">
+                    <TableCell colSpan={8} align="center">
                       No medical reports available
                     </TableCell>
                   </TableRow>

@@ -27,6 +27,7 @@ import 'jspdf-autotable';
 import Layout from '../components/Layout';
 import IconImage from '../assets/Icon.png';
 import { calculateAge } from '../utils/dateUtils';
+import api from '../services/api';
 
 function Report() {
   const location = useLocation();
@@ -40,9 +41,40 @@ function Report() {
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [error, setError] = useState('');
+  const [loadedImages, setLoadedImages] = useState({});
 
   // Extract TB prediction from imageData if available
   const tbPrediction = imageData?.tb_prediction || null;
+
+  // Function to convert an image to base64 when it loads
+  const handleImageLoad = (imageKey, imgElement) => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = imgElement.naturalWidth;
+      canvas.height = imgElement.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('Could not get canvas context');
+        return;
+      }
+      ctx.drawImage(imgElement, 0, 0);
+      try {
+        const dataURL = canvas.toDataURL('image/png');
+        setLoadedImages(prev => ({ ...prev, [imageKey]: dataURL }));
+      } catch (e) {
+        console.error('Error converting to data URL:', e);
+        // Try with JPEG if PNG fails
+        try {
+          const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+          setLoadedImages(prev => ({ ...prev, [imageKey]: dataURL }));
+        } catch (e2) {
+          console.error('Error converting to JPEG:', e2);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleImageLoad:', error);
+    }
+  };
 
   const handleGeneratePDF = () => {
     setShowPasswordDialog(true);
@@ -57,6 +89,9 @@ function Report() {
     setShowPasswordDialog(false);
     setGeneratingPDF(true);
     setPdfProgress(0);
+
+    // Wait for React to finish rendering and images to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Simulate PDF generation progress
     const interval = setInterval(() => {
@@ -96,41 +131,96 @@ function Report() {
       doc.line(20, yPosition + 16, pageWidth - 20, yPosition + 16);
       yPosition = yPosition + 30;
 
-      // Add TB Confidence Score with adjusted positioning
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 128);
-      doc.setFont(undefined, 'bold');
-      doc.text('TB Detection Confidence:', 25, yPosition);
-      
-      // Add progress bar with adjusted dimensions
-      const barWidth = 50;
-      const barHeight = 6;
-      const startX = 120;
-      
-      // Draw background bar
-      doc.setDrawColor(200, 200, 200);
-      doc.setFillColor(200, 200, 200);
-      doc.roundedRect(startX, yPosition - 4, barWidth, barHeight, 1, 1, 'F');
-      
-      // Draw filled portion
+      // Patient Information Box
       doc.setDrawColor(0, 0, 128);
-      doc.setFillColor(0, 0, 128);
-      doc.roundedRect(startX, yPosition - 4, (tbConfidence / 100) * barWidth, barHeight, 1, 1, 'F');
+      doc.setFillColor(240, 240, 255);
+      doc.roundedRect(20, yPosition, pageWidth - 40, 35, 2, 2, 'FD');
       
-      // Add percentage text
       doc.setFontSize(11);
-      doc.text(`${tbConfidence}%`, startX + barWidth + 3, yPosition);
-      yPosition += 20;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      
+      // Left side information
+      doc.text('Patient Name: ' + (patientData?.name || 'N/A'), 25, yPosition + 10);
+      doc.text('Age / Sex: ' + calculateAge(patientData?.date_of_birth) + ' / ' + (patientData?.gender || 'N/A'), 25, yPosition + 20);
+      doc.text('Facility: Example General Hospital', 25, yPosition + 30);
+      
+      // Right side information
+      doc.text('Patient ID: ' + (patientData?.uid || 'N/A'), pageWidth - 25, yPosition + 10, { align: 'right' });
+      doc.text('Date: ' + new Date().toLocaleDateString(), pageWidth - 25, yPosition + 20, { align: 'right' });
+      yPosition += 45;
 
-      // Section Headers Style
-      const addSectionHeader = (text, y) => {
+      // TB Analysis Results
+      if (tbPrediction) {
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 128);
+        doc.setFont(undefined, 'bold');
+        doc.text('TB Analysis Results', 25, yPosition);
+        yPosition += 10;
+
+        // Add border line under the heading
+        doc.setDrawColor(0, 0, 128);
+        doc.setLineWidth(0.5);
+        doc.line(25, yPosition, 200, yPosition);
+        yPosition += 10;
+
+        // Prediction Result
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.text('Prediction:', 30, yPosition);
+        
+        // Add colored rectangle for prediction
+        const predictionText = tbPrediction.result;
+        const textWidth = doc.getTextWidth('Prediction: ');
+        doc.setFillColor(tbPrediction.result === 'TB Positive' ? 255 : 200, 
+                        tbPrediction.result === 'TB Positive' ? 200 : 255, 
+                        200);
+        doc.setDrawColor(tbPrediction.result === 'TB Positive' ? 255 : 0, 
+                        0, 
+                        0);
+        doc.roundedRect(30 + textWidth, yPosition - 5, doc.getTextWidth(predictionText) + 10, 7, 1, 1, 'FD');
+        doc.text(predictionText, 30 + textWidth + 5, yPosition);
+        yPosition += 15;
+
+        // TB Detection Confidence
         doc.setFontSize(14);
         doc.setTextColor(0, 0, 128);
         doc.setFont(undefined, 'bold');
-        doc.text(text, 20, y);
-        doc.setLineWidth(0.2);
-        doc.line(20, y + 2, pageWidth - 20, y + 2);
-        return y + 12;
+        doc.text('TB Detection Confidence', 30, yPosition);
+        yPosition += 10;
+
+        // Progress bar
+        const barWidth = 150;
+        const barHeight = 8;
+        const startX = 30;
+        
+        // Background bar
+        doc.setDrawColor(224, 224, 224);
+        doc.setFillColor(224, 224, 224);
+      doc.roundedRect(startX, yPosition - 4, barWidth, barHeight, 1, 1, 'F');
+      
+        // Filled portion
+      doc.setDrawColor(0, 0, 128);
+      doc.setFillColor(0, 0, 128);
+        doc.roundedRect(startX, yPosition - 4, (tbPrediction.confidence * 100 / 100) * barWidth, barHeight, 1, 1, 'F');
+        
+        // Percentage text
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 128);
+        doc.text((tbPrediction.confidence * 100).toFixed(1) + '%', startX + barWidth + 10, yPosition + 2);
+      yPosition += 20;
+      }
+
+      // Section Headers Style
+      const addSectionHeader = (text, y) => {
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 128);
+        doc.setFont(undefined, 'bold');
+        doc.text(text, 25, y);
+        doc.setLineWidth(0.5);
+        doc.line(25, y + 2, pageWidth - 25, y + 2);
+        return y + 15;
       };
 
       // I. X-Ray Details
@@ -138,22 +228,25 @@ function Report() {
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
-      doc.text(`View: Posteroanterior (PA)`, 25, yPosition); yPosition += 7;
-      doc.text(`Date: ${new Date().toLocaleString()}`, 25, yPosition); yPosition += 7;
-      doc.text(`Technician: A. Smith, RT(R)`, 25, yPosition); yPosition += 7;
-      doc.text(`Reporting Radiologist: Dr. Jane Patel, MD`, 25, yPosition); yPosition += 15;
+      
+      // Add indentation and consistent spacing
+      const detailsX = 30;
+      doc.text(`View: Posteroanterior (PA)`, detailsX, yPosition); yPosition += 8;
+      doc.text(`Date: ${new Date().toLocaleString()}`, detailsX, yPosition); yPosition += 8;
+      doc.text(`Technician: A. Smith, RT(R)`, detailsX, yPosition); yPosition += 8;
+      doc.text(`Reporting Radiologist: Dr. Jane Patel, MD`, detailsX, yPosition); yPosition += 20;
 
       // II. Radiology Report
       yPosition = addSectionHeader('II. Radiology Report', yPosition);
-      doc.setFontSize(12);
+      doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
-      doc.text('Overall Impression', 25, yPosition);
-      yPosition += 8;
+      doc.text('Overall Impression', detailsX, yPosition);
+      yPosition += 10;
 
       doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
-      doc.text('Findings are suggestive of active pulmonary tuberculosis.', 25, yPosition);
-      yPosition += 12;
+      doc.text('Findings are suggestive of active pulmonary tuberculosis.', detailsX, yPosition);
+      yPosition += 15;
 
       // Specific Findings Table with adjusted width
       doc.autoTable({
@@ -169,17 +262,24 @@ function Report() {
         theme: 'grid',
         headStyles: { 
           fillColor: [0, 0, 128],
+          textColor: [255, 255, 255],
+          fontSize: 11,
+          fontStyle: 'bold',
+          halign: 'left',
+          cellPadding: 8
+        },
+        bodyStyles: {
           fontSize: 10,
-          fontStyle: 'bold'
+          cellPadding: 8,
+          textColor: [0, 0, 0]
         },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3
-        },
-        margin: { left: 25, right: 25 },
+        margin: { left: detailsX, right: detailsX },
         columnStyles: {
-          0: { cellWidth: 35 },
+          0: { cellWidth: 50 },
           1: { cellWidth: 'auto' }
+        },
+        alternateRowStyles: {
+          fillColor: [250, 250, 250]
         }
       });
       yPosition = doc.lastAutoTable.finalY + 12;
@@ -187,23 +287,94 @@ function Report() {
       // III. Image Analysis
       yPosition = addSectionHeader('III. Image Analysis', yPosition);
       
-      // Add the three images side by side with adjusted dimensions
+      // Add the images side by side with adjusted dimensions
       if (imageData?.preview) {
-        const imgWidth = (pageWidth - 70) / 3;
+        const isPositive = tbPrediction?.result === 'TB Positive';
+        const imgWidth = isPositive ? (pageWidth - 70) / 4 : 60; // Fixed width for single image
         const imgHeight = 35;
         
-        // Add images with proper spacing
-        doc.addImage(imageData.preview, 'JPEG', 25, yPosition, imgWidth, imgHeight);
-        doc.addImage(imageData.preview, 'JPEG', 25 + imgWidth + 5, yPosition, imgWidth, imgHeight);
-        doc.addImage(imageData.preview, 'JPEG', 25 + (imgWidth + 5) * 2, yPosition, imgWidth, imgHeight);
+        // Function to convert image URL to base64
+        // Check if we have all required images
+        const checkImagesLoaded = () => {
+          const requiredImages = ['original'];
+          if (tbPrediction?.result === 'TB Positive') {
+            // Only add required images if they actually exist in imageData
+            if (imageData.segmentation_mask) requiredImages.push('segmentation');
+            if (imageData.heatmap_overlay) requiredImages.push('heatmap');
+            if (imageData.rendering_png) requiredImages.push('rendering');
+          }
+          return requiredImages.every(key => loadedImages[key]);
+        };
+
+                try {
+          // Wait a moment for images to load
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Check if all required images are loaded
+          if (!checkImagesLoaded()) {
+            setError('Please wait for all images to load before generating the PDF.');
+            clearInterval(interval);
+            setGeneratingPDF(false);
+            return;
+          }
+
+          try {
+            if (isPositive) {
+              // TB Positive: Multiple images in a row
+              doc.addImage(loadedImages.original, 'PNG', 25, yPosition, imgWidth, imgHeight);
+
+              // Segmentation Overlay
+              if (loadedImages.segmentation) {
+                doc.addImage(loadedImages.segmentation, 'PNG', 25 + imgWidth + 5, yPosition, imgWidth, imgHeight);
+              }
+
+              // Heatmap
+              if (loadedImages.heatmap) {
+                doc.addImage(loadedImages.heatmap, 'PNG', 25 + (imgWidth + 5) * 2, yPosition, imgWidth, imgHeight);
+              }
+
+              // 3D Rendering
+              if (loadedImages.rendering) {
+                doc.addImage(loadedImages.rendering, 'PNG', 25 + (imgWidth + 5) * 3, yPosition, imgWidth, imgHeight);
+              }
+            } else {
+              // TB Negative: Single centered image
+              const centerX = (pageWidth - imgWidth) / 2;
+              doc.addImage(loadedImages.original, 'PNG', centerX, yPosition, imgWidth, imgHeight);
+            }
+          } catch (imageError) {
+            console.error('Error loading images:', imageError);
+            setError('Error loading images for PDF. Please ensure all images are loaded and try again.');
+            return;
+          }
+        } catch (error) {
+          console.error('Error in image processing:', error);
+          setError('Error processing images for PDF. Please try again.');
+          return;
+        }
         
         yPosition += imgHeight + 4;
         
-        // Image labels with adjusted positioning
+                // Image labels with adjusted positioning
         doc.setFontSize(8);
-        doc.text('Original X-ray', 25 + imgWidth/2, yPosition, { align: 'center' });
-        doc.text('Segmentation Overlay', 25 + imgWidth * 1.5 + 5, yPosition, { align: 'center' });
-        doc.text('3D Reconstruction', 25 + imgWidth * 2.5 + 10, yPosition, { align: 'center' });
+        
+        if (isPositive) {
+          // TB Positive: Multiple image labels
+          doc.text('Original X-ray', 25 + imgWidth/2, yPosition, { align: 'center' });
+          if (imageData.segmentation_mask) {
+            doc.text('Segmentation Overlay', 25 + imgWidth * 1.5 + 5, yPosition, { align: 'center' });
+          }
+          if (imageData.heatmap_overlay) {
+            doc.text('Heatmap Analysis', 25 + imgWidth * 2.5 + 10, yPosition, { align: 'center' });
+          }
+          if (imageData.rendering_png) {
+            doc.text('3D Analysis', 25 + imgWidth * 3.5 + 15, yPosition, { align: 'center' });
+          }
+        } else {
+          // TB Negative: Single centered label
+          const centerX = (pageWidth - imgWidth) / 2;
+          doc.text('Original X-ray', centerX + imgWidth/2, yPosition, { align: 'center' });
+        }
         yPosition += 12;
       }
 
@@ -213,41 +384,52 @@ function Report() {
         yPosition = 20;
       }
 
-      // Key Point box with gradient background
+      // Key Point box with matching webpage style
       doc.setDrawColor(0, 0, 128);
       doc.setFillColor(240, 240, 255);
-      doc.roundedRect(25, yPosition, pageWidth - 50, 22, 2, 2, 'FD');
-      yPosition += 6;
+      doc.roundedRect(detailsX, yPosition, pageWidth - (2 * detailsX), 40, 2, 2, 'FD');
+      yPosition += 10;
       
-      doc.setFontSize(10);
+      doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(0, 0, 128);
-      doc.text('Key Point:', 30, yPosition);
-      yPosition += 5;
+      doc.text('Key Point:', detailsX + 5, yPosition);
+      yPosition += 8;
       
       doc.setFont(undefined, 'normal');
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(9);
+      doc.setFontSize(11);
       const keyPointText = 'A chest X-ray can raise strong suspicion for TB but cannot confirm diagnosis—combine with microbiology and clinical assessment before treatment decisions.';
-      const lines = doc.splitTextToSize(keyPointText, pageWidth - 60);
-      doc.text(lines, 30, yPosition);      // Footer with border line
+      const lines = doc.splitTextToSize(keyPointText, pageWidth - (2 * detailsX) - 10);
+      doc.text(lines, detailsX + 5, yPosition);      // Footer with border line
       doc.setDrawColor(0, 0, 128);
       doc.setLineWidth(0.5);
-      doc.line(20, pageHeight - 40, pageWidth - 20, pageHeight - 40);
+      doc.line(20, pageHeight - 45, pageWidth - 20, pageHeight - 45);
       
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setTextColor(128, 128, 128);
-      doc.text('Generated by TB Screening System', pageWidth / 2, pageHeight - 33, { align: 'center' });
       
-      // Add additional footer text
-      doc.text('Software is for binary TB detection only (colour-coded by severity).', pageWidth / 2, pageHeight - 27, { align: 'center' });
-      doc.text('Confirm with a physician.', pageWidth / 2, pageHeight - 23, { align: 'center' });
-      doc.text('© 2025 PIVOTAL TELERADIOLOGY LLP. All rights reserved.', pageWidth / 2, pageHeight - 19, { align: 'center' });
+      // Footer text with improved spacing
+      const footerY = pageHeight - 35;
+      doc.text('Generated by TB Screening System', pageWidth / 2, footerY, { align: 'center' });
+      doc.text('Software is for binary TB detection only (colour-coded by severity).', pageWidth / 2, footerY + 6, { align: 'center' });
+      doc.text('Confirm with a physician.', pageWidth / 2, footerY + 12, { align: 'center' });
       
-      // Add footer links text
-      doc.text('Terms & Conditions | Privacy Policy | Disclaimer', pageWidth / 2, pageHeight - 13, { align: 'center' });
+      // Copyright text
+      doc.setFontSize(9);
+      doc.text('© 2025 PIVOTAL TELERADIOLOGY LLP. All rights reserved.', pageWidth / 2, footerY + 18, { align: 'center' });
       
-      doc.text('Page 1', pageWidth - 25, pageHeight - 8);
+      // Links with underline effect
+      const linksText = 'Terms & Conditions | Privacy Policy | Disclaimer';
+      const linksWidth = doc.getTextWidth(linksText);
+      const linksX = (pageWidth - linksWidth) / 2;
+      doc.text(linksText, pageWidth / 2, footerY + 24, { align: 'center' });
+      doc.setDrawColor(128, 128, 128);
+      doc.setLineWidth(0.2);
+      doc.line(linksX, footerY + 25, linksX + linksWidth, footerY + 25);
+      
+      // Page number
+      doc.text('Page 1', pageWidth - 25, footerY + 30);
 
       // Wait for progress to complete
       await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -351,15 +533,17 @@ function Report() {
                 TB Analysis Results
               </Typography>
               <Box sx={{ pl: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  <strong>Prediction:</strong>{' '}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body1">
+                    <strong>Prediction:</strong>
+                  </Typography>
                   <Chip
                     label={tbPrediction.result}
                     color={tbPrediction.result === 'TB Positive' ? 'error' : 'success'}
                     variant="outlined"
                     size="small"
                   />
-                </Typography>
+                </Box>
                 {/* <Typography variant="body1" gutterBottom>
                   <strong>Confidence:</strong> {tbPrediction.confidence.toFixed(1)}%
                 </Typography> */}
@@ -391,7 +575,7 @@ function Report() {
                 </Box>
               </Box>
               <Typography variant="h6" color="primary">
-                {tbPrediction.confidence  *100}%
+                {(tbPrediction.confidence * 100).toFixed(1)}%
               </Typography>
             </Box>
           </Box>          {generatingPDF ? (
@@ -502,14 +686,35 @@ function Report() {
                 >
                   III. Image Analysis
                 </Typography>
-                <Grid container spacing={2} sx={{ mb: 2, justifyContent: 'center' }}>
+                <Grid 
+                  container 
+                  spacing={2} 
+                  sx={{ 
+                    mb: 2, 
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
+                    alignItems: 'stretch',
+                    justifyContent: 'space-between',
+                    minHeight: '250px'
+                  }}
+                >
                   {imageData?.preview && (
-                    <>
-                      <Grid item xs={12} md={4}>
-                        <Box sx={{ textAlign: 'center' }}>
+                    tbPrediction?.result === 'TB Positive' ? (
+                      <>
+                        <Grid item xs={3} sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <Box sx={{ 
+                            height: '100%', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
                           <img
                             src={imageData.preview}
                             alt="Original X-ray"
+                              crossOrigin="anonymous"
+                              onLoad={(e) => handleImageLoad('original', e.target)}
                             style={{ 
                               width: '100%', 
                               height: 'auto',
@@ -521,11 +726,20 @@ function Report() {
                           <Typography variant="body2">Original X-ray</Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} md={4}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <img
-                            src={imageData.preview}
+                        {imageData.segmentation_mask && (
+                          <Grid item xs={3} sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ 
+                              height: '100%', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <img
+                                src={`http://localhost:8000${imageData.segmentation_mask}`}
                             alt="Segmentation Overlay"
+                                crossOrigin="anonymous"
+                                onLoad={(e) => handleImageLoad('segmentation', e.target)}
                             style={{ 
                               width: '100%', 
                               height: 'auto',
@@ -537,23 +751,81 @@ function Report() {
                           <Typography variant="body2">Segmentation Overlay</Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} md={4}>
+                        )}
+                        {imageData.heatmap_overlay && (
+                          <Grid item xs={3} sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ 
+                              height: '100%', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <img
+                                src={`http://localhost:8000${imageData.heatmap_overlay}`}
+                                alt="Heatmap"
+                                crossOrigin="anonymous"
+                                onLoad={(e) => handleImageLoad('heatmap', e.target)}
+                                style={{ 
+                                  width: '100%', 
+                                  height: 'auto',
+                                  maxHeight: 200,
+                                  objectFit: 'contain',
+                                  marginBottom: 8
+                                }}
+                              />
+                              <Typography variant="body2">Heatmap Analysis</Typography>
+                            </Box>
+                          </Grid>
+                        )}
+                        {imageData.rendering_png && (
+                          <Grid item xs={3} sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ 
+                              height: '100%', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <img
+                                src={`http://localhost:8000${imageData.rendering_png}`}
+                                alt="3D Analysis"
+                                crossOrigin="anonymous"
+                                onLoad={(e) => handleImageLoad('rendering', e.target)}
+                                style={{ 
+                                  width: '95%', 
+                                  height: 'auto',
+                                  maxHeight: 190,
+                                  objectFit: 'contain',
+                                  marginBottom: 8,
+                                  transform: 'rotate(270deg) scaleX(-1)'
+                                }}
+                              />
+                              <Typography variant="body2">3D Analysis</Typography>
+                            </Box>
+                          </Grid>
+                        )}
+                      </>
+                    ) : (
+                      <Grid item xs={12} md={6} sx={{ mx: 'auto' }}>
                         <Box sx={{ textAlign: 'center' }}>
                           <img
                             src={imageData.preview}
-                            alt="3D Reconstruction"
+                            alt="Original X-ray"
+                            crossOrigin="anonymous"
+                            onLoad={(e) => handleImageLoad('original', e.target)}
                             style={{ 
                               width: '100%', 
                               height: 'auto',
-                              maxHeight: 200,
+                              maxHeight: 300,
                               objectFit: 'contain',
                               marginBottom: 8
                             }}
                           />
-                          <Typography variant="body2">3D Reconstruction</Typography>
+                          <Typography variant="body2">Original X-ray</Typography>
                         </Box>
                       </Grid>
-                    </>
+                    )
                   )}
                 </Grid>
               </Box>

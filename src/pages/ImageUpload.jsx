@@ -137,6 +137,7 @@ function ImageUpload() {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         setProgress(percentCompleted);
       });
+      console.log(response.data);
 
       // Navigate to visualization page
       navigate('/visualize', {
@@ -195,16 +196,19 @@ function ImageUpload() {
                     error={Boolean(error && error.includes('patient'))}
                   />
                 )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Box>
-                      <Typography variant="body1">{option.name}</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        ID: {option.uid}
-                      </Typography>
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          ID: {option.uid}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                )}
+                  );
+                }}
                 loading={loading}
                 loadingText="Loading patients..."
                 noOptionsText="No patients found"

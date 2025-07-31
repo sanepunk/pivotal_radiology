@@ -98,7 +98,7 @@ function SignIn() {
     }
   };
 
-  const handleRegister = async (values, { setSubmitting }) => {
+  const handleRegister = async (values, { setSubmitting, resetForm }) => {
     setLoading(true);
     setError('');
     try {
@@ -110,17 +110,44 @@ function SignIn() {
         confirmPassword: values.confirmPassword || '',
       });
       
-      // Navigate to success page with credentials
-      navigate('/doctor-register-success', {
-        state: {
-          name: values.name || '',
-          email: values.email || '',
-          password: values.password || '',
-          role: values.role || 'doctor'
-        }
-      });
+      // Only proceed if we get a successful response
+      if (response && response.data) {
+        // Reset form and loading state
+        resetForm();
+        setLoading(false);
+        
+        // Navigate to success page with credentials
+        navigate('/doctor-register-success', {
+          state: {
+            name: values.name || '',
+            email: values.email || '',
+            password: values.password || '',
+            role: values.role || 'doctor'
+          }
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to register. Please try again.');
+      console.error('Registration error:', err);
+      let errorMessage = 'Failed to register. Please try again.';
+      
+      // Handle validation errors from FastAPI
+      if (err.response?.status === 422 && err.response?.data?.detail) {
+        if (Array.isArray(err.response.data.detail)) {
+          // Format validation errors
+          errorMessage = err.response.data.detail
+            .map(err => `${err.loc.join('.')} - ${err.msg}`)
+            .join(', ');
+        } else {
+          errorMessage = err.response.data.detail;
+        }
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
+    } finally {
       setLoading(false);
       setSubmitting(false);
     }
@@ -150,6 +177,7 @@ function SignIn() {
             onChange={(_, newValue) => {
               setMode(newValue);
               setError('');
+              setLoading(false);
             }}
             sx={{ mb: 3 }}
           >
@@ -174,6 +202,7 @@ function SignIn() {
               }}
               validationSchema={loginValidationSchema}
               onSubmit={handleLogin}
+              enableReinitialize={true}
             >
               {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
                 <Form style={{ width: '100%' }}>
@@ -234,6 +263,7 @@ function SignIn() {
               }}
               validationSchema={registerValidationSchema}
               onSubmit={handleRegister}
+              enableReinitialize={true}
             >
               {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
                 <Form style={{ width: '100%' }}>

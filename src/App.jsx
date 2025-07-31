@@ -14,6 +14,7 @@ import ImageUpload from './pages/ImageUpload';
 import Visualization from './pages/Visualization';
 import Report from './pages/Report';
 import PatientRegistration from './pages/PatientRegistration';
+import VTK3DViewer from './pages/VTK3DViewer';
 import PatientListPage from './pages/PatientListPage';
 import PatientDetails from './components/PatientDetails';
 import DoctorManagement from './pages/DoctorManagement';
@@ -294,6 +295,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Report />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/vtk-viewer"
+                element={
+                  <ProtectedRoute>
+                    <VTK3DViewer />
                   </ProtectedRoute>
                 }
               />
