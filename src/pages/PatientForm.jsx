@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import {
@@ -10,8 +10,11 @@ import {
   Typography,
   MenuItem,
   Paper,
+  Alert,
 } from '@mui/material';
 import Layout from '../components/Layout';
+import { patientAPI } from '../services/api';
+import LoadingTips from '../components/LoadingTips';
 
 const validationSchema = Yup.object({
   name: Yup.string().required('Name is required'),
@@ -21,8 +24,7 @@ const validationSchema = Yup.object({
     .integer('Age must be an integer'),
   sex: Yup.string().required('Sex is required'),
   mobile: Yup.string()
-    .matches(/^\d{10}$/, 'Mobile number must be 10 digits')
-    .required('Mobile number is required'),
+    .matches(/^\d{10}$/, 'Mobile number must be 10 digits'),
   email: Yup.string().email('Invalid email address'),
   whatsapp: Yup.string().matches(/^\d{10}$/, 'WhatsApp number must be 10 digits'),
   address: Yup.string().required('Address is required'),
@@ -31,33 +33,48 @@ const validationSchema = Yup.object({
 
 function PatientForm() {
   const navigate = useNavigate();
-  const [uid, setUid] = useState('');
+  const location = useLocation();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const generateUID = () => {
-    // Generate a unique ID (you can implement your own logic)
-    const timestamp = Date.now().toString(36);
-    const randomStr = Math.random().toString(36).substring(2, 7);
-    return `TB-${timestamp}-${randomStr}`.toUpperCase();
-  };
+  const existingPatient = location.state?.patientData;
 
   const handleSubmit = async (values, { setSubmitting }) => {
+    setLoading(true);
+    setError('');
+    
     try {
-      const generatedUid = generateUID();
-      setUid(generatedUid);
-      
-      // Save patient data
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
+      }, 200);
+
       const patientData = {
         ...values,
-        uid: generatedUid,
         createdAt: new Date().toISOString(),
       };
 
-      // Navigate to image upload
-      navigate('/upload', { state: { patientData } });
-    } catch (error) {
-      console.error('Error saving patient data:', error);
+      // Create or update patient
+      const response = existingPatient
+        ? await patientAPI.updatePatient(existingPatient.id, patientData)
+        : await patientAPI.createPatient(patientData);
+
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      // Navigate to image upload with patient data
+      navigate('/upload', { 
+        state: { 
+          patientData: response.data,
+          isNewPatient: !existingPatient
+        } 
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error saving patient data');
     } finally {
       setSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -66,19 +83,27 @@ function PatientForm() {
       <Container maxWidth="md">
         <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
           <Typography variant="h4" color="primary" gutterBottom align="center">
-            New Patient Registration
+            {existingPatient ? 'Update Patient' : 'New Patient Registration'}
           </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          {loading && <LoadingTips progress={progress} />}
 
           <Formik
             initialValues={{
-              name: '',
-              age: '',
-              sex: '',
-              mobile: '',
-              email: '',
-              whatsapp: '',
-              address: '',
-              location: '',
+              name: existingPatient?.name || '',
+              age: existingPatient?.age || '',
+              sex: existingPatient?.sex || '',
+              mobile: existingPatient?.mobile || '',
+              email: existingPatient?.email || '',
+              whatsapp: existingPatient?.whatsapp || '',
+              address: existingPatient?.address || '',
+              location: existingPatient?.location || '',
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
@@ -96,6 +121,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.name && Boolean(errors.name)}
                       helperText={touched.name && errors.name}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -110,6 +136,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.age && Boolean(errors.age)}
                       helperText={touched.age && errors.age}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -124,6 +151,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.sex && Boolean(errors.sex)}
                       helperText={touched.sex && errors.sex}
+                      disabled={loading}
                     >
                       <MenuItem value="male">Male</MenuItem>
                       <MenuItem value="female">Female</MenuItem>
@@ -141,6 +169,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.mobile && Boolean(errors.mobile)}
                       helperText={touched.mobile && errors.mobile}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -154,6 +183,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.whatsapp && Boolean(errors.whatsapp)}
                       helperText={touched.whatsapp && errors.whatsapp}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -168,6 +198,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.email && Boolean(errors.email)}
                       helperText={touched.email && errors.email}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -183,6 +214,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.address && Boolean(errors.address)}
                       helperText={touched.address && errors.address}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -196,6 +228,7 @@ function PatientForm() {
                       onBlur={handleBlur}
                       error={touched.location && Boolean(errors.location)}
                       helperText={touched.location && errors.location}
+                      disabled={loading}
                     />
                   </Grid>
 
@@ -205,9 +238,9 @@ function PatientForm() {
                       variant="contained"
                       fullWidth
                       size="large"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || loading}
                     >
-                      Register & Continue
+                      {existingPatient ? 'Update & Continue' : 'Register & Continue'}
                     </Button>
                   </Grid>
                 </Grid>

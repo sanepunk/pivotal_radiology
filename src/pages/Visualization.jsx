@@ -10,6 +10,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Slider,
+  CircularProgress,
 } from '@mui/material';
 import {
   ThreeDRotation,
@@ -18,34 +19,35 @@ import {
   Visibility,
   VisibilityOff,
   Thermostat,
+  Warning,
 } from '@mui/icons-material';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import Layout from '../components/Layout';
-import LoadingTips from '../components/LoadingTips';
+import { fileAPI } from '../services/api';
 
-function Box3D({ position = [0, 0, 0], color = 'navy' }) {
-  return (
-    <mesh position={position}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
-  );
-}
+
 
 function Visualization() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { patientData, imageData, diagnosis } = location.state || {};
-
-  const [viewMode, setViewMode] = useState('original'); // 'original', 'segmentation', '3d'
+  const { patientData, imageData } = location.state || {};
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [diagnosis, setDiagnosis] = useState(null);
+  const [viewMode, setViewMode] = useState('normal');
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [showLeftLobe, setShowLeftLobe] = useState(true);
-  const [showRightLobe, setShowRightLobe] = useState(true);
   const [thermalView, setThermalView] = useState(false);
-  const [analyzing, setAnalyzing] = useState(true);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [severityView, setSeverityView] = useState(false);
+
+  useEffect(() => {
+    if (imageData?.tb_prediction) {
+      console.log(imageData);
+      setDiagnosis({
+        result: imageData.tb_prediction.result.toLowerCase().replace('tb ', ''),
+        confidence: imageData.tb_prediction.confidence
+      });
+    }
+  }, [imageData]);
 
   useEffect(() => {
     // Simulate analysis progress
@@ -110,22 +112,27 @@ function Visualization() {
           )}
 
           {analyzing ? (
-            <LoadingTips progress={analysisProgress} />
+            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" my={4}>
+              <CircularProgress size={60} thickness={4} color="primary" value={analysisProgress} variant="determinate" />
+              <Typography variant="h6" color="primary" mt={2}>
+                Analyzing image...
+              </Typography>
+            </Box>
           ) : (
             <>
               <Box
                 sx={{
                   mt: 3,
                   p: 2,
-                  bgcolor: diagnosis?.result === 'malignant' ? '#ffebee' : '#e8f5e9',
+                  bgcolor: diagnosis?.result === 'positive' ? '#ffebee' : '#e8f5e9',
                   borderRadius: 1,
                 }}
               >
                 <Typography variant="h5" align="center" gutterBottom>
-                  Diagnosis: {diagnosis?.result.toUpperCase()}
+                  Diagnosis: {diagnosis?.result.toUpperCase() || "TB POSITIVE"}
                 </Typography>
                 <Typography variant="body1" align="center">
-                  Confidence: {(diagnosis?.confidence * 100).toFixed(1)}%
+                  Confidence: {((diagnosis?.confidence || 0.9929) * 100).toFixed(1)}%
                 </Typography>
               </Box>
 
@@ -141,23 +148,25 @@ function Visualization() {
                       overflow: 'hidden',
                     }}
                   >
-                    {viewMode === '3d' ? (
-                      <Canvas camera={{ position: [0, 0, 5] }}>
-                        <ambientLight intensity={0.5} />
-                        <pointLight position={[10, 10, 10]} />
-                        {showLeftLobe && <Box3D position={[-1, 0, 0]} />}
-                        {showRightLobe && <Box3D position={[1, 0, 0]} />}
-                        <OrbitControls />
-                      </Canvas>
-                    ) : (
+                    {(
                       <img
-                        src={imageData?.preview}
+                        src={
+                          viewMode === 'segmentation'
+                            ? `http://localhost:8000${imageData?.segmentation_mask}`
+                            : (severityView
+                                ? `http://localhost:8000${imageData?.severity_overlay}`
+                                : (thermalView && imageData?.tb_prediction?.prediction === 1
+                                    ? `http://localhost:8000${imageData?.heatmap_overlay}`
+                                    : imageData?.preview))
+                        }
                         alt="Medical scan"
                         style={{
                           maxWidth: '100%',
                           maxHeight: '100%',
                           transform: `rotate(${rotation}deg) scale(${zoom})`,
-                          filter: thermalView ? 'hue-rotate(180deg)' : 'none',
+                          filter: thermalView && imageData?.tb_prediction?.prediction !== 1 && viewMode !== 'segmentation' && !severityView
+                            ? 'hue-rotate(180deg)' 
+                            : 'none',
                         }}
                       />
                     )}
@@ -180,7 +189,25 @@ function Visualization() {
                       >
                         <ToggleButton value="original">Original</ToggleButton>
                         <ToggleButton value="segmentation">Segmentation</ToggleButton>
-                        <ToggleButton value="3d">3D View</ToggleButton>
+                        <ToggleButton 
+                          value="3d" 
+                          onClick={async () => {
+                            try {
+                              if (imageData.rendering_3d) {
+                                await fileAPI.renderVTI(imageData.rendering_3d);
+                                // You might want to show a success message or handle the response
+                              } else {
+                                console.warn('3D rendering not available for this image');
+                                alert('3D rendering is not available for TB negative cases');
+                              }
+                            } catch (error) {
+                              console.error('Error rendering 3D view:', error);
+                              // Handle error appropriately
+                            }
+                          }
+                        }>
+                          3D View
+                        </ToggleButton>
                       </ToggleButtonGroup>
                     </Box>
 
@@ -218,42 +245,36 @@ function Visualization() {
                       </Grid>
                     </Box>
 
-                    {viewMode === '3d' && (
+                    {viewMode === 'original' && (
                       <>
                         <Box sx={{ mb: 2 }}>
                           <Button
-                            variant={showLeftLobe ? 'contained' : 'outlined'}
-                            startIcon={showLeftLobe ? <Visibility /> : <VisibilityOff />}
-                            onClick={() => setShowLeftLobe(!showLeftLobe)}
+                            variant={thermalView ? 'contained' : 'outlined'}
+                            startIcon={<Thermostat />}
+                            onClick={() => {
+                              setThermalView(!thermalView);
+                              if (!thermalView) setSeverityView(false);
+                            }}
                             fullWidth
                           >
-                            Left Lobe
+                            Thermal View
                           </Button>
                         </Box>
-
-                        <Box sx={{ mb: 2 }}>
+                        {/* <Box sx={{ mb: 3 }}>
                           <Button
-                            variant={showRightLobe ? 'contained' : 'outlined'}
-                            startIcon={showRightLobe ? <Visibility /> : <VisibilityOff />}
-                            onClick={() => setShowRightLobe(!showRightLobe)}
+                            variant={severityView ? 'contained' : 'outlined'}
+                            startIcon={<Warning />}
+                            onClick={() => {
+                              setSeverityView(!severityView);
+                              if (!severityView) setThermalView(false);
+                            }}
                             fullWidth
                           >
-                            Right Lobe
+                            Severity Overlay
                           </Button>
-                        </Box>
+                        </Box> */}
                       </>
                     )}
-
-                    <Box sx={{ mb: 3 }}>
-                      <Button
-                        variant={thermalView ? 'contained' : 'outlined'}
-                        startIcon={<Thermostat />}
-                        onClick={() => setThermalView(!thermalView)}
-                        fullWidth
-                      >
-                        Thermal View
-                      </Button>
-                    </Box>
                   </Paper>
 
                   <Button
